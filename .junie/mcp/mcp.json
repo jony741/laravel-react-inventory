@@ -1,0 +1,11 @@
+{
+    "mcpServers": {
+        "laravel-boost": {
+            "command": "/Users/khurshidalam/.config/herd-lite/bin/php",
+            "args": [
+                "/Applications/XAMPP/xamppfiles/htdocs/laravel-react-inventory-software/artisan",
+                "boost:mcp"
+            ]
+        }
+    }
+}
