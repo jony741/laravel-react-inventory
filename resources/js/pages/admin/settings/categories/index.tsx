@@ -5,6 +5,7 @@ import CategoryController from '@/actions/App/Http/Controllers/Settings/Category
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
     Dialog,
     DialogContent,
@@ -15,7 +16,6 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
     Select,
     SelectContent,
@@ -131,9 +131,11 @@ export default function CategoriesIndex({
                             : CategoryController.store.form()
                         )}
                         method={editingCategory ? 'patch' : 'post'}
-                        options={{
-                            onSuccess: () => setIsDialogOpen(false),
-                        }}
+                        onSuccess={() => setIsDialogOpen(false)}
+                        transform={(data) => ({
+                            ...data,
+                            is_active: data.is_active === true || data.is_active === '1' || data.is_active === 'on',
+                        })}
                         className="space-y-4"
                     >
                         {({ errors, processing }) => (
@@ -195,6 +197,7 @@ export default function CategoriesIndex({
                                     <Checkbox 
                                         id="is_active" 
                                         name="is_active" 
+                                        value="1"
                                         defaultChecked={editingCategory ? editingCategory.is_active : true} 
                                     />
                                     <Label htmlFor="is_active" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">

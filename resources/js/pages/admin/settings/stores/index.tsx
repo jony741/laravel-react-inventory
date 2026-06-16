@@ -117,9 +117,11 @@ export default function StoresIndex({ stores }: { stores: Store[] }) {
                             : StoreController.store.form()
                         )}
                         method={editingStore ? 'patch' : 'post'}
-                        options={{
-                            onSuccess: () => setIsDialogOpen(false),
-                        }}
+                        onSuccess={() => setIsDialogOpen(false)}
+                        transform={(data) => ({
+                            ...data,
+                            is_active: data.is_active === true || data.is_active === '1' || data.is_active === 'on',
+                        })}
                         className="space-y-4"
                     >
                         {({ errors, processing }) => (
@@ -184,7 +186,8 @@ export default function StoresIndex({ stores }: { stores: Store[] }) {
                                 <div className="flex items-center space-x-2">
                                     <Checkbox 
                                         id="is_active" 
-                                        name="is_active" 
+                                        name="is_active"
+                                        value="1"
                                         defaultChecked={editingStore ? editingStore.is_active : true} 
                                     />
                                     <Label htmlFor="is_active" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
