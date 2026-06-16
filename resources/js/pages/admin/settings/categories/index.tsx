@@ -1,7 +1,8 @@
-import { Form, Head, router } from '@inertiajs/react';
+import { Form, Head } from '@inertiajs/react';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import CategoryController from '@/actions/App/Http/Controllers/Settings/CategoryController';
+import DeleteConfirmationDialog from '@/components/delete-confirmation-dialog';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
@@ -43,12 +44,6 @@ export default function CategoriesIndex({
     const openEditDialog = (category: Category) => {
         setEditingCategory(category);
         setIsDialogOpen(true);
-    };
-
-    const deleteCategory = (category: Category) => {
-        if (confirm('Are you sure you want to delete this category?')) {
-            router.delete(CategoryController.destroy.url(category));
-        }
     };
 
     return (
@@ -96,9 +91,18 @@ export default function CategoriesIndex({
                                             <Button variant="ghost" size="icon" onClick={() => openEditDialog(category)}>
                                                 <Pencil className="h-4 w-4" />
                                             </Button>
-                                            <Button variant="ghost" size="icon" onClick={() => deleteCategory(category)}>
-                                                <Trash2 className="h-4 w-4 text-destructive" />
-                                            </Button>
+                                            <DeleteConfirmationDialog
+                                                action={CategoryController.destroy(category)}
+                                                title="Delete category?"
+                                                description={`This will permanently delete "${category.name}".`}
+                                                confirmLabel="Delete category"
+                                                processingLabel="Deleting category..."
+                                            >
+                                                <Button variant="ghost" size="icon">
+                                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                                    <span className="sr-only">Delete {category.name}</span>
+                                                </Button>
+                                            </DeleteConfirmationDialog>
                                         </div>
                                     </td>
                                 </tr>

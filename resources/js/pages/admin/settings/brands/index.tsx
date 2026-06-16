@@ -1,7 +1,8 @@
-import { Form, Head, router } from '@inertiajs/react';
+import { Form, Head } from '@inertiajs/react';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import BrandController from '@/actions/App/Http/Controllers/Settings/BrandController';
+import DeleteConfirmationDialog from '@/components/delete-confirmation-dialog';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
@@ -31,12 +32,6 @@ export default function BrandsIndex({ brands }: { brands: Brand[] }) {
     const openEditDialog = (brand: Brand) => {
         setEditingBrand(brand);
         setIsDialogOpen(true);
-    };
-
-    const deleteBrand = (brand: Brand) => {
-        if (confirm('Are you sure you want to delete this brand?')) {
-            router.delete(BrandController.destroy.url(brand));
-        }
     };
 
     return (
@@ -80,9 +75,18 @@ export default function BrandsIndex({ brands }: { brands: Brand[] }) {
                                             <Button variant="ghost" size="icon" onClick={() => openEditDialog(brand)}>
                                                 <Pencil className="h-4 w-4" />
                                             </Button>
-                                            <Button variant="ghost" size="icon" onClick={() => deleteBrand(brand)}>
-                                                <Trash2 className="h-4 w-4 text-destructive" />
-                                            </Button>
+                                            <DeleteConfirmationDialog
+                                                action={BrandController.destroy(brand)}
+                                                title="Delete brand?"
+                                                description={`This will permanently delete "${brand.name}".`}
+                                                confirmLabel="Delete brand"
+                                                processingLabel="Deleting brand..."
+                                            >
+                                                <Button variant="ghost" size="icon">
+                                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                                    <span className="sr-only">Delete {brand.name}</span>
+                                                </Button>
+                                            </DeleteConfirmationDialog>
                                         </div>
                                     </td>
                                 </tr>

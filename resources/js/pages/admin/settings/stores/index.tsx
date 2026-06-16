@@ -1,7 +1,8 @@
-import { Form, Head, router } from '@inertiajs/react';
+import { Form, Head } from '@inertiajs/react';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import StoreController from '@/actions/App/Http/Controllers/Settings/StoreController';
+import DeleteConfirmationDialog from '@/components/delete-confirmation-dialog';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
@@ -32,12 +33,6 @@ export default function StoresIndex({ stores }: { stores: Store[] }) {
     const openEditDialog = (store: Store) => {
         setEditingStore(store);
         setIsDialogOpen(true);
-    };
-
-    const deleteStore = (store: Store) => {
-        if (confirm('Are you sure you want to delete this store?')) {
-            router.delete(StoreController.destroy.url(store));
-        }
     };
 
     return (
@@ -83,9 +78,18 @@ export default function StoresIndex({ stores }: { stores: Store[] }) {
                                             <Button variant="ghost" size="icon" onClick={() => openEditDialog(store)}>
                                                 <Pencil className="h-4 w-4" />
                                             </Button>
-                                            <Button variant="ghost" size="icon" onClick={() => deleteStore(store)}>
-                                                <Trash2 className="h-4 w-4 text-destructive" />
-                                            </Button>
+                                            <DeleteConfirmationDialog
+                                                action={StoreController.destroy(store)}
+                                                title="Delete store?"
+                                                description={`This will permanently delete "${store.name}".`}
+                                                confirmLabel="Delete store"
+                                                processingLabel="Deleting store..."
+                                            >
+                                                <Button variant="ghost" size="icon">
+                                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                                    <span className="sr-only">Delete {store.name}</span>
+                                                </Button>
+                                            </DeleteConfirmationDialog>
                                         </div>
                                     </td>
                                 </tr>
