@@ -27,14 +27,13 @@ import { index } from '@/routes/categories';
 import type { Category } from '@/types';
 
 export default function CategoriesIndex({ 
-    categories, 
-    parentCategories 
+    categories
 }: { 
-    categories: Category[], 
-    parentCategories: Category[] 
+    categories: Category[],
 }) {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+    const availableParentCategories = categories.filter((category) => category.id !== editingCategory?.id);
 
     const openCreateDialog = () => {
         setEditingCategory(null);
@@ -167,12 +166,12 @@ export default function CategoriesIndex({
                                 <div className="grid gap-2">
                                     <Label htmlFor="parent_id">Parent Category</Label>
                                     <Select name="parent_id" defaultValue={editingCategory?.parent_id?.toString() || ""}>
-                                        <SelectTrigger>
+                                        <SelectTrigger className="w-full">
                                             <SelectValue placeholder="Select a parent category (optional)" />
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="0">None</SelectItem>
-                                            {parentCategories.map((cat) => (
+                                            {availableParentCategories.map((cat) => (
                                                 <SelectItem key={cat.id} value={cat.id.toString()}>
                                                     {cat.name}
                                                 </SelectItem>
