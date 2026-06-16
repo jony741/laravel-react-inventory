@@ -31,3 +31,26 @@ export type Store = {
     created_at: string;
     updated_at: string;
 };
+
+export type Customer = {
+    id: number;
+    name: string;
+    phone: string | null;
+    email: string | null;
+    address: string | null;
+    is_active: boolean;
+    created_at: string;
+    updated_at: string;
+};
+
+export type Supplier = {
+    id: number;
+    name: string;
+    phone: string | null;
+    email: string | null;
+    address: string | null;
+    contact_person: string | null;
+    is_active: boolean;
+    created_at: string;
+    updated_at: string;
+};
