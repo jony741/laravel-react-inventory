@@ -6,6 +6,7 @@ import DeleteConfirmationDialog from '@/components/delete-confirmation-dialog';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import Pagination, { type PaginationData } from '@/components/pagination';
+import TableSkeleton from '@/components/table-skeleton';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -22,7 +23,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { index } from '@/routes/suppliers';
 import type { Supplier } from '@/types';
 
-export default function SuppliersIndex({ suppliers }: { suppliers: PaginationData<Supplier> }) {
+export default function SuppliersIndex({ suppliers }: { suppliers?: PaginationData<Supplier> }) {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
 
@@ -66,51 +67,57 @@ export default function SuppliersIndex({ suppliers }: { suppliers: PaginationDat
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-sidebar-border/70 dark:divide-sidebar-border">
-                            {suppliers.data.map((supplier, index) => (
-                                <tr key={supplier.id}>
-                                    <td className="px-4 py-3 text-muted-foreground">
-                                        {suppliers.from + index}
-                                    </td>
-                                    <td className="px-4 py-3">{supplier.name}</td>
-                                    <td className="px-4 py-3 text-muted-foreground">{supplier.contact_person || '-'}</td>
-                                    <td className="px-4 py-3 text-muted-foreground">{supplier.phone || '-'}</td>
-                                    <td className="px-4 py-3 text-muted-foreground">{supplier.email || '-'}</td>
-                                    <td className="px-4 py-3">
-                                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${supplier.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'}`}>
-                                            {supplier.is_active ? 'Active' : 'Inactive'}
-                                        </span>
-                                    </td>
-                                    <td className="px-4 py-3 text-right">
-                                        <div className="flex justify-end gap-2">
-                                            <Button variant="ghost" size="icon" onClick={() => openEditDialog(supplier)}>
-                                                <Pencil className="h-4 w-4" />
-                                            </Button>
-                                            <DeleteConfirmationDialog
-                                                action={SupplierController.destroy(supplier)}
-                                                title="Delete supplier?"
-                                                description={`This will permanently delete "${supplier.name}".`}
-                                                confirmLabel="Delete supplier"
-                                                processingLabel="Deleting supplier..."
-                                            >
-                                                <Button variant="ghost" size="icon">
-                                                    <Trash2 className="h-4 w-4 text-destructive" />
-                                                    <span className="sr-only">Delete {supplier.name}</span>
-                                                </Button>
-                                            </DeleteConfirmationDialog>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                            {suppliers.data.length === 0 && (
-                                <tr>
-                                    <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
-                                        No suppliers found.
-                                    </td>
-                                </tr>
+                            {!suppliers ? (
+                                <TableSkeleton rows={10} columns={7} />
+                            ) : (
+                                <>
+                                    {suppliers.data.map((supplier, index) => (
+                                        <tr key={supplier.id}>
+                                            <td className="px-4 py-3 text-muted-foreground">
+                                                {suppliers.from + index}
+                                            </td>
+                                            <td className="px-4 py-3">{supplier.name}</td>
+                                            <td className="px-4 py-3 text-muted-foreground">{supplier.contact_person || '-'}</td>
+                                            <td className="px-4 py-3 text-muted-foreground">{supplier.phone || '-'}</td>
+                                            <td className="px-4 py-3 text-muted-foreground">{supplier.email || '-'}</td>
+                                            <td className="px-4 py-3">
+                                                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${supplier.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'}`}>
+                                                    {supplier.is_active ? 'Active' : 'Inactive'}
+                                                </span>
+                                            </td>
+                                            <td className="px-4 py-3 text-right">
+                                                <div className="flex justify-end gap-2">
+                                                    <Button variant="ghost" size="icon" onClick={() => openEditDialog(supplier)}>
+                                                        <Pencil className="h-4 w-4" />
+                                                    </Button>
+                                                    <DeleteConfirmationDialog
+                                                        action={SupplierController.destroy(supplier)}
+                                                        title="Delete supplier?"
+                                                        description={`This will permanently delete "${supplier.name}".`}
+                                                        confirmLabel="Delete supplier"
+                                                        processingLabel="Deleting supplier..."
+                                                    >
+                                                        <Button variant="ghost" size="icon">
+                                                            <Trash2 className="h-4 w-4 text-destructive" />
+                                                            <span className="sr-only">Delete {supplier.name}</span>
+                                                        </Button>
+                                                    </DeleteConfirmationDialog>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {suppliers.data.length === 0 && (
+                                        <tr>
+                                            <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
+                                                No suppliers found.
+                                            </td>
+                                        </tr>
+                                    )}
+                                </>
                             )}
                         </tbody>
                     </table>
-                    {suppliers.total > suppliers.per_page && (
+                    {suppliers && suppliers.total > suppliers.per_page && (
                         <Pagination
                             links={suppliers.links}
                             from={suppliers.from}

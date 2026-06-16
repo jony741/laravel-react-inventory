@@ -14,7 +14,7 @@ class CustomerController extends Controller
     public function index(): Response
     {
         return Inertia::render('admin/crm/customers/index', [
-            'customers' => Customer::latest()->paginate(10),
+            'customers' => Inertia::defer(fn () => Customer::latest()->paginate(10)),
         ]);
     }
 

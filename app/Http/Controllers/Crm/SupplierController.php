@@ -14,7 +14,7 @@ class SupplierController extends Controller
     public function index(): Response
     {
         return Inertia::render('admin/crm/suppliers/index', [
-            'suppliers' => Supplier::latest()->paginate(10),
+            'suppliers' => Inertia::defer(fn () => Supplier::latest()->paginate(10)),
         ]);
     }
 

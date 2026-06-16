@@ -6,6 +6,7 @@ import DeleteConfirmationDialog from '@/components/delete-confirmation-dialog';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import Pagination, { type PaginationData } from '@/components/pagination';
+import TableSkeleton from '@/components/table-skeleton';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -22,7 +23,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { index } from '@/routes/customers';
 import type { Customer } from '@/types';
 
-export default function CustomersIndex({ customers }: { customers: PaginationData<Customer> }) {
+export default function CustomersIndex({ customers }: { customers?: PaginationData<Customer> }) {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
 
@@ -65,50 +66,56 @@ export default function CustomersIndex({ customers }: { customers: PaginationDat
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-sidebar-border/70 dark:divide-sidebar-border">
-                            {customers.data.map((customer, index) => (
-                                <tr key={customer.id}>
-                                    <td className="px-4 py-3 text-muted-foreground">
-                                        {customers.from + index}
-                                    </td>
-                                    <td className="px-4 py-3">{customer.name}</td>
-                                    <td className="px-4 py-3 text-muted-foreground">{customer.phone || '-'}</td>
-                                    <td className="px-4 py-3 text-muted-foreground">{customer.email || '-'}</td>
-                                    <td className="px-4 py-3">
-                                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${customer.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'}`}>
-                                            {customer.is_active ? 'Active' : 'Inactive'}
-                                        </span>
-                                    </td>
-                                    <td className="px-4 py-3 text-right">
-                                        <div className="flex justify-end gap-2">
-                                            <Button variant="ghost" size="icon" onClick={() => openEditDialog(customer)}>
-                                                <Pencil className="h-4 w-4" />
-                                            </Button>
-                                            <DeleteConfirmationDialog
-                                                action={CustomerController.destroy(customer)}
-                                                title="Delete customer?"
-                                                description={`This will permanently delete "${customer.name}".`}
-                                                confirmLabel="Delete customer"
-                                                processingLabel="Deleting customer..."
-                                            >
-                                                <Button variant="ghost" size="icon">
-                                                    <Trash2 className="h-4 w-4 text-destructive" />
-                                                    <span className="sr-only">Delete {customer.name}</span>
-                                                </Button>
-                                            </DeleteConfirmationDialog>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                            {customers.data.length === 0 && (
-                                <tr>
-                                    <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
-                                        No customers found.
-                                    </td>
-                                </tr>
+                            {!customers ? (
+                                <TableSkeleton rows={10} columns={6} />
+                            ) : (
+                                <>
+                                    {customers.data.map((customer, index) => (
+                                        <tr key={customer.id}>
+                                            <td className="px-4 py-3 text-muted-foreground">
+                                                {customers.from + index}
+                                            </td>
+                                            <td className="px-4 py-3">{customer.name}</td>
+                                            <td className="px-4 py-3 text-muted-foreground">{customer.phone || '-'}</td>
+                                            <td className="px-4 py-3 text-muted-foreground">{customer.email || '-'}</td>
+                                            <td className="px-4 py-3">
+                                                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${customer.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'}`}>
+                                                    {customer.is_active ? 'Active' : 'Inactive'}
+                                                </span>
+                                            </td>
+                                            <td className="px-4 py-3 text-right">
+                                                <div className="flex justify-end gap-2">
+                                                    <Button variant="ghost" size="icon" onClick={() => openEditDialog(customer)}>
+                                                        <Pencil className="h-4 w-4" />
+                                                    </Button>
+                                                    <DeleteConfirmationDialog
+                                                        action={CustomerController.destroy(customer)}
+                                                        title="Delete customer?"
+                                                        description={`This will permanently delete "${customer.name}".`}
+                                                        confirmLabel="Delete customer"
+                                                        processingLabel="Deleting customer..."
+                                                    >
+                                                        <Button variant="ghost" size="icon">
+                                                            <Trash2 className="h-4 w-4 text-destructive" />
+                                                            <span className="sr-only">Delete {customer.name}</span>
+                                                        </Button>
+                                                    </DeleteConfirmationDialog>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {customers.data.length === 0 && (
+                                        <tr>
+                                            <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
+                                                No customers found.
+                                            </td>
+                                        </tr>
+                                    )}
+                                </>
                             )}
                         </tbody>
                     </table>
-                    {customers.total > customers.per_page && (
+                    {customers && customers.total > customers.per_page && (
                         <Pagination
                             links={customers.links}
                             from={customers.from}
