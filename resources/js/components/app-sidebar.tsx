@@ -1,4 +1,4 @@
-import { LayoutGrid, Settings, Tag, FolderTree, Store } from 'lucide-react';
+import { LayoutGrid, Settings, Tag, FolderTree, Store, Users, Building2, Package } from 'lucide-react';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import {
@@ -10,6 +10,9 @@ import { dashboard } from '@/routes';
 import { index as indexBrands } from '@/routes/brands';
 import { index as indexCategories } from '@/routes/categories';
 import { index as indexStores } from '@/routes/stores';
+import { index as indexCustomers } from '@/routes/customers';
+import { index as indexSuppliers } from '@/routes/suppliers';
+import { index as indexProducts } from '@/routes/products';
 import type { NavItem } from '@/types';
 
 const mainNavItems: NavItem[] = [
@@ -17,6 +20,27 @@ const mainNavItems: NavItem[] = [
         title: 'Dashboard',
         href: dashboard(),
         icon: LayoutGrid,
+    },
+];
+
+const inventoryNavItems: NavItem[] = [
+    {
+        title: 'Products',
+        href: indexProducts(),
+        icon: Package,
+    },
+];
+
+const crmNavItems: NavItem[] = [
+    {
+        title: 'Customers',
+        href: indexCustomers(),
+        icon: Users,
+    },
+    {
+        title: 'Suppliers',
+        href: indexSuppliers(),
+        icon: Building2,
     },
 ];
 
@@ -43,6 +67,8 @@ export function AppSidebar() {
         <Sidebar collapsible="icon" variant="inset">
             <SidebarContent>
                 <NavMain items={mainNavItems} />
+                <NavMain items={inventoryNavItems} label="Inventory" />
+                <NavMain items={crmNavItems} label="CRM" />
                 <NavMain items={settingsNavItems} label="Settings" />
             </SidebarContent>
 
