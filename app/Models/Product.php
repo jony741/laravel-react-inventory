@@ -16,6 +16,7 @@ use Illuminate\Support\Carbon;
  * @property string $name
  * @property string $slug
  * @property string|null $description
+ * @property string|null $image
  * @property int|null $category_id
  * @property int|null $brand_id
  * @property string $unit
@@ -24,7 +25,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
  */
-#[Fillable(['name', 'slug', 'description', 'category_id', 'brand_id', 'unit', 'is_active'])]
+#[Fillable(['name', 'slug', 'description', 'image', 'category_id', 'brand_id', 'unit', 'is_active'])]
 class Product extends Model
 {
     /** @use HasFactory<ProductFactory> */
