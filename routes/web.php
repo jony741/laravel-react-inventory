@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Crm\CustomerController;
 use App\Http\Controllers\Crm\SupplierController;
+use App\Http\Controllers\Inventory\ProductController;
 use App\Http\Controllers\Settings\BrandController;
 use App\Http\Controllers\Settings\CategoryController;
 use App\Http\Controllers\Settings\StoreController;
@@ -17,6 +18,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 Route::middleware('auth')
     ->prefix('admin')
     ->group(function () {
+        Route::resource('/inventory/products', ProductController::class);
         Route::resource('/crm/customers', CustomerController::class);
         Route::resource('/crm/suppliers', SupplierController::class);
         Route::resource('/settings/brands', BrandController::class);

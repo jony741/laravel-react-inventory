@@ -54,3 +54,34 @@ export type Supplier = {
     created_at: string;
     updated_at: string;
 };
+
+export type ProductVariant = {
+    id: number;
+    product_id: number;
+    sku: string;
+    barcode: string | null;
+    color: string | null;
+    size: string | null;
+    cost: string;
+    price: string;
+    reorder_level: number;
+    is_active: boolean;
+    created_at: string;
+    updated_at: string;
+};
+
+export type Product = {
+    id: number;
+    name: string;
+    slug: string;
+    description: string | null;
+    category_id: number | null;
+    brand_id: number | null;
+    unit: string;
+    is_active: boolean;
+    category?: Category;
+    brand?: Brand;
+    variants?: ProductVariant[];
+    created_at: string;
+    updated_at: string;
+};
