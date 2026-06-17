@@ -70,6 +70,25 @@ const emptyVariant: VariantFormData = {
     is_active: true,
 };
 
+const PRODUCT_UNITS = [
+    { value: 'pcs', label: 'Pieces (pcs)' },
+    { value: 'kg', label: 'Kilogram (kg)' },
+    { value: 'gm', label: 'Gram (gm)' },
+    { value: 'lb', label: 'Pound (lb)' },
+    { value: 'oz', label: 'Ounce (oz)' },
+    { value: 'ltr', label: 'Liter (ltr)' },
+    { value: 'ml', label: 'Milliliter (ml)' },
+    { value: 'm', label: 'Meter (m)' },
+    { value: 'cm', label: 'Centimeter (cm)' },
+    { value: 'ft', label: 'Feet (ft)' },
+    { value: 'in', label: 'Inch (in)' },
+    { value: 'box', label: 'Box' },
+    { value: 'pack', label: 'Pack' },
+    { value: 'set', label: 'Set' },
+    { value: 'pair', label: 'Pair' },
+    { value: 'dozen', label: 'Dozen' },
+] as const;
+
 type Props = {
     products?: PaginationData<Product>;
     categories: Pick<Category, 'id' | 'name'>[];
@@ -82,6 +101,13 @@ export default function ProductsIndex({ products, categories, brands }: Props) {
     const [variants, setVariants] = useState<VariantFormData[]>([{ ...emptyVariant }]);
     const [searchQuery, setSearchQuery] = useState('');
     const [productStatus, setProductStatus] = useState(true);
+    const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+    const [previewProduct, setPreviewProduct] = useState<Product | null>(null);
+
+    const openPreview = (product: Product) => {
+        setPreviewProduct(product);
+        setIsPreviewOpen(true);
+    };
 
     const openCreateDialog = () => {
         setEditingProduct(null);
@@ -132,8 +158,8 @@ export default function ProductsIndex({ products, categories, brands }: Props) {
         const prices = product.variants.map(v => parseFloat(v.price));
         const min = Math.min(...prices);
         const max = Math.max(...prices);
-        if (min === max) return `$${min.toFixed(0)}`;
-        return `$${min.toFixed(0)} - $${max.toFixed(0)}`;
+        if (min === max) return `৳${min.toFixed(0)}`;
+        return `৳${min.toFixed(0)} - ৳${max.toFixed(0)}`;
     };
 
     const getVariantColors = (product: Product) => {
@@ -265,6 +291,9 @@ export default function ProductsIndex({ products, categories, brands }: Props) {
                                             </td>
                                             <td className="px-4 py-3 text-right">
                                                 <div className="flex justify-end gap-2">
+                                                    <Button variant="ghost" size="icon" onClick={() => openPreview(product)}>
+                                                        <Eye className="h-4 w-4" />
+                                                    </Button>
                                                     <Button variant="ghost" size="icon" onClick={() => openEditDialog(product)}>
                                                         <Pencil className="h-4 w-4" />
                                                     </Button>
@@ -307,8 +336,9 @@ export default function ProductsIndex({ products, categories, brands }: Props) {
             </div>
 
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="w-[80%] max-w-[80%] h-[95vh] overflow-y-auto p-0 gap-0 sm:max-w-[80%]">
+                <DialogContent className="w-[80%] max-w-[80%] h-[95vh] p-0 gap-0 sm:max-w-[80%] flex flex-col overflow-hidden">
                     <Form
+                        className="flex flex-col h-full"
                         {...(editingProduct
                             ? ProductController.update.form(editingProduct)
                             : ProductController.store.form()
@@ -326,8 +356,8 @@ export default function ProductsIndex({ products, categories, brands }: Props) {
                     >
                         {({ errors, processing, data }) => (
                             <>
-                                {/* Header */}
-                                <div className="flex items-center justify-between border-b px-10 py-4">
+                                {/* Header - Sticky */}
+                                <div className="sticky top-0 z-10 bg-background flex items-center justify-between border-b px-10 py-4">
                                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                         <Package className="h-4 w-4" />
                                         <span>Products</span>
@@ -352,32 +382,34 @@ export default function ProductsIndex({ products, categories, brands }: Props) {
                                     </div>
                                 </div>
 
-                                {/* Product Title */}
-                                <div className="px-6 py-4 border-b">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
-                                                <Package className="h-5 w-5 text-muted-foreground" />
+                                {/* Scrollable Content */}
+                                <div className="flex-1 overflow-y-auto">
+                                    {/* Product Title */}
+                                    <div className="px-6 py-4 border-b">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                                                    <Package className="h-5 w-5 text-muted-foreground" />
+                                                </div>
+                                                <h1 className="text-xl font-semibold">
+                                                    {editingProduct?.name || 'New Product'}
+                                                </h1>
                                             </div>
-                                            <h1 className="text-xl font-semibold">
-                                                {editingProduct?.name || 'New Product'}
-                                            </h1>
+                                            {editingProduct && (
+                                                <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium ${
+                                                    productStatus
+                                                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                                        : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400'
+                                                }`}>
+                                                    <span className={`h-2 w-2 rounded-full ${productStatus ? 'bg-green-500' : 'bg-gray-500'}`} />
+                                                    {productStatus ? 'Active' : 'Draft'} · {variants.length} variant{variants.length !== 1 ? 's' : ''}
+                                                </span>
+                                            )}
                                         </div>
-                                        {editingProduct && (
-                                            <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium ${
-                                                productStatus
-                                                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                                                    : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400'
-                                            }`}>
-                                                <span className={`h-2 w-2 rounded-full ${productStatus ? 'bg-green-500' : 'bg-gray-500'}`} />
-                                                {productStatus ? 'Active' : 'Draft'} · {variants.length} variant{variants.length !== 1 ? 's' : ''}
-                                            </span>
-                                        )}
                                     </div>
-                                </div>
 
-                                {/* Main Content */}
-                                <div className="p-6 space-y-6">
+                                    {/* Main Content */}
+                                    <div className="p-6 space-y-6">
                                     {/* Two Column Layout */}
                                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                         {/* Product Information Card */}
@@ -458,6 +490,23 @@ export default function ProductsIndex({ products, categories, brands }: Props) {
                                                     <InputError message={errors.brand_id} />
                                                 </div>
 
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="unit" className="text-xs text-muted-foreground">Unit</Label>
+                                                    <Select name="unit" defaultValue={editingProduct?.unit || ''}>
+                                                        <SelectTrigger className="bg-muted/50 border-0 w-full">
+                                                            <SelectValue placeholder="Select unit" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {PRODUCT_UNITS.map(unit => (
+                                                                <SelectItem key={unit.value} value={unit.value}>
+                                                                    {unit.label}
+                                                                </SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <InputError message={errors.unit} />
+                                                </div>
+
                                                 <div className="flex items-center justify-between rounded-lg bg-muted/50 p-4">
                                                     <div>
                                                         <div className="font-medium text-sm">Product status</div>
@@ -499,34 +548,30 @@ export default function ProductsIndex({ products, categories, brands }: Props) {
                                             <table className="w-full text-sm">
                                                 <thead className="bg-muted/50">
                                                 <tr className="text-muted-foreground">
-                                                    <th className="px-4 py-3 text-left font-medium">SKU / Barcode</th>
+                                                    <th className="px-4 py-3 text-left font-medium w-12">#</th>
+                                                    <th className="px-4 py-3 text-left font-medium">SKU</th>
                                                     <th className="px-4 py-3 text-left font-medium">Color</th>
-                                                        <th className="px-4 py-3 text-left font-medium">Size</th>
-                                                        <th className="px-4 py-3 text-left font-medium">Cost</th>
-                                                        <th className="px-4 py-3 text-left font-medium">Price</th>
-                                                        <th className="px-4 py-3 text-left font-medium">Status</th>
-                                                        <th className="px-4 py-3 w-10"></th>
-                                                    </tr>
+                                                    <th className="px-4 py-3 text-left font-medium">Size</th>
+                                                    <th className="px-4 py-3 text-left font-medium">Cost</th>
+                                                    <th className="px-4 py-3 text-left font-medium">Price</th>
+                                                    <th className="px-4 py-3 text-left font-medium">Status</th>
+                                                    <th className="px-4 py-3 w-10"></th>
+                                                </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-border">
                                                     {variants.map((variant, idx) => (
                                                         <tr key={idx} className="bg-card">
+                                                            <td className="px-4 py-3 text-muted-foreground font-medium">
+                                                                {idx + 1}
+                                                            </td>
                                                             <td className="px-4 py-3">
-                                                                <div className="space-y-1">
-                                                                    <Input
-                                                                        value={variant.sku}
-                                                                        onChange={(e) => updateVariant(idx, 'sku', e.target.value)}
-                                                                        placeholder="SKU-001"
-                                                                        className="h-8 bg-transparent border-0 p-0 font-medium focus-visible:ring-0"
-                                                                        required
-                                                                    />
-                                                                    <Input
-                                                                        value={variant.barcode}
-                                                                        onChange={(e) => updateVariant(idx, 'barcode', e.target.value)}
-                                                                        placeholder="Barcode"
-                                                                        className="h-6 bg-transparent border-0 p-0 text-xs text-muted-foreground focus-visible:ring-0"
-                                                                    />
-                                                                </div>
+                                                                <Input
+                                                                    value={variant.sku}
+                                                                    onChange={(e) => updateVariant(idx, 'sku', e.target.value)}
+                                                                    placeholder="SKU-001"
+                                                                    className="h-8 bg-transparent border-0 p-0 font-medium focus-visible:ring-0"
+                                                                    required
+                                                                />
                                                             </td>
                                                             <td className="px-4 py-3">
                                                                 <div className="flex items-center gap-2">
@@ -553,7 +598,7 @@ export default function ProductsIndex({ products, categories, brands }: Props) {
                                                             </td>
                                                             <td className="px-4 py-3">
                                                                 <div className="flex items-center">
-                                                                    <span className="text-muted-foreground mr-1">$</span>
+                                                                    <span className="text-muted-foreground mr-1">৳</span>
                                                                     <Input
                                                                         type="number"
                                                                         value={variant.cost}
@@ -568,7 +613,7 @@ export default function ProductsIndex({ products, categories, brands }: Props) {
                                                             </td>
                                                             <td className="px-4 py-3">
                                                                 <div className="flex items-center font-medium">
-                                                                    <span className="text-muted-foreground mr-1">$</span>
+                                                                    <span className="text-muted-foreground mr-1">৳</span>
                                                                     <Input
                                                                         type="number"
                                                                         value={variant.price}
@@ -617,9 +662,222 @@ export default function ProductsIndex({ products, categories, brands }: Props) {
 
                                     </div>
                                 </div>
+                                </div>
                             </>
                         )}
                     </Form>
+                </DialogContent>
+            </Dialog>
+
+            {/* Preview Dialog */}
+            <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+                <DialogContent className="w-[80%] max-w-[80%] h-[95vh] p-0 gap-0 sm:max-w-[80%] flex flex-col overflow-hidden">
+                    {/* Header - Sticky */}
+                    <div className="sticky top-0 z-10 bg-background flex items-center justify-between border-b px-10 py-4">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Package className="h-4 w-4" />
+                            <span>Products</span>
+                            <span className="text-muted-foreground/50">›</span>
+                            <span className="text-foreground font-medium">
+                                {previewProduct?.name || 'Product'}
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Button type="button" variant="outline" size="sm" onClick={() => setIsPreviewOpen(false)}>
+                                <X className="mr-2 h-4 w-4" />
+                                Close
+                            </Button>
+                            <Button type="button" size="sm" onClick={() => {
+                                setIsPreviewOpen(false);
+                                if (previewProduct) openEditDialog(previewProduct);
+                            }}>
+                                <Pencil className="mr-2 h-4 w-4" />
+                                Edit
+                            </Button>
+                        </div>
+                    </div>
+
+                    {/* Scrollable Content */}
+                    <div className="flex-1 overflow-y-auto">
+                        {/* Product Title */}
+                        <div className="px-6 py-4 border-b">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                                        <Package className="h-5 w-5 text-muted-foreground" />
+                                    </div>
+                                    <h1 className="text-xl font-semibold">
+                                        {previewProduct?.name || 'Product'}
+                                    </h1>
+                                </div>
+                                {previewProduct && (
+                                    <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium ${
+                                        previewProduct.is_active
+                                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                            : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400'
+                                    }`}>
+                                        <span className={`h-2 w-2 rounded-full ${previewProduct.is_active ? 'bg-green-500' : 'bg-gray-500'}`} />
+                                        {previewProduct.is_active ? 'Active' : 'Draft'} · {previewProduct.variants?.length || 0} variant{(previewProduct.variants?.length || 0) !== 1 ? 's' : ''}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Main Content */}
+                        <div className="p-6 space-y-6">
+                            {/* Two Column Layout */}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                {/* Product Information Card */}
+                                <div className="rounded-xl border bg-card p-5 space-y-4">
+                                    <div className="flex items-center gap-2 text-sm font-medium">
+                                        <Info className="h-4 w-4 text-muted-foreground" />
+                                        Product information
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        <div className="space-y-2">
+                                            <div className="text-xs text-muted-foreground">Product name</div>
+                                            <div className="bg-muted/50 rounded-md px-3 py-2 text-sm">
+                                                {previewProduct?.name || '-'}
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <div className="text-xs text-muted-foreground">Description</div>
+                                            <div className="bg-muted/50 rounded-md px-3 py-2 text-sm min-h-[80px]">
+                                                {previewProduct?.description || '-'}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Organization Card */}
+                                <div className="rounded-xl border bg-card p-5 space-y-4">
+                                    <div className="flex items-center gap-2 text-sm font-medium">
+                                        <Tag className="h-4 w-4 text-muted-foreground" />
+                                        Organization
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        <div className="space-y-2">
+                                            <div className="text-xs text-muted-foreground">Category</div>
+                                            <div className="bg-muted/50 rounded-md px-3 py-2 text-sm">
+                                                {previewProduct?.category?.name || '-'}
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <div className="text-xs text-muted-foreground">Brand</div>
+                                            <div className="bg-muted/50 rounded-md px-3 py-2 text-sm">
+                                                {previewProduct?.brand?.name || '-'}
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <div className="text-xs text-muted-foreground">Unit</div>
+                                            <div className="bg-muted/50 rounded-md px-3 py-2 text-sm">
+                                                {previewProduct?.unit || '-'}
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center justify-between rounded-lg bg-muted/50 p-4">
+                                            <div>
+                                                <div className="font-medium text-sm">Product status</div>
+                                                <div className="text-xs text-muted-foreground">Visible & sellable</div>
+                                            </div>
+                                            <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${
+                                                previewProduct?.is_active
+                                                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                                    : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+                                            }`}>
+                                                <span className={`h-1.5 w-1.5 rounded-full ${previewProduct?.is_active ? 'bg-green-500' : 'bg-gray-400'}`} />
+                                                {previewProduct?.is_active ? 'Active' : 'Draft'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Variants Section */}
+                            <div className="rounded-xl border bg-card p-5 space-y-4">
+                                <div className="flex items-center gap-2 text-sm font-medium">
+                                    <Layers className="h-4 w-4 text-muted-foreground" />
+                                    Variants
+                                    <span className="text-muted-foreground font-normal">
+                                        {previewProduct?.variants?.length || 0} SKU{(previewProduct?.variants?.length || 0) !== 1 ? 's' : ''}
+                                    </span>
+                                </div>
+
+                                <div className="rounded-lg border overflow-hidden">
+                                    <table className="w-full text-sm">
+                                        <thead className="bg-muted/50">
+                                        <tr className="text-muted-foreground">
+                                            <th className="px-4 py-3 text-left font-medium w-12">#</th>
+                                            <th className="px-4 py-3 text-left font-medium">SKU</th>
+                                            <th className="px-4 py-3 text-left font-medium">Barcode</th>
+                                            <th className="px-4 py-3 text-left font-medium">Color</th>
+                                            <th className="px-4 py-3 text-left font-medium">Size</th>
+                                            <th className="px-4 py-3 text-left font-medium">Cost</th>
+                                            <th className="px-4 py-3 text-left font-medium">Price</th>
+                                            <th className="px-4 py-3 text-left font-medium">Status</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-border">
+                                            {previewProduct?.variants?.map((variant, idx) => (
+                                                <tr key={variant.id} className="bg-card">
+                                                    <td className="px-4 py-3 text-muted-foreground font-medium">
+                                                        {idx + 1}
+                                                    </td>
+                                                    <td className="px-4 py-3 font-medium">
+                                                        {variant.sku || '-'}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-muted-foreground text-xs">
+                                                        {variant.barcode || '-'}
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        <div className="flex items-center gap-2">
+                                                            {variant.color && (
+                                                                <div
+                                                                    className={`h-4 w-4 rounded-full shrink-0 ${getColorClass(variant.color)}`}
+                                                                />
+                                                            )}
+                                                            <span>{variant.color || '-'}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        {variant.size || '-'}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-muted-foreground">
+                                                        ৳{variant.cost}
+                                                    </td>
+                                                    <td className="px-4 py-3 font-medium">
+                                                        ৳{variant.price}
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${
+                                                            variant.is_active
+                                                                ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                                                : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+                                                        }`}>
+                                                            <span className={`h-1.5 w-1.5 rounded-full ${variant.is_active ? 'bg-green-500' : 'bg-gray-400'}`} />
+                                                            {variant.is_active ? 'Active' : 'Draft'}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                            {(!previewProduct?.variants || previewProduct.variants.length === 0) && (
+                                                <tr>
+                                                    <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
+                                                        No variants found.
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </DialogContent>
             </Dialog>
         </>
