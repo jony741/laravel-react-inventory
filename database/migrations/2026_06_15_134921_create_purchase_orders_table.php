@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('payment_status')->default('UNPAID'); // UNPAID, PARTIAL, PAID
             $table->foreignId('approved_by')->nullable()->constrained('users')->nullOnDelete();
             $table->string('discount_type')->default('FIXED'); // FIXED or PERCENT
-            $table->string('supplier_invoice_number');
+            $table->string('supplier_invoice_number')->nullable();
             $table->date('expected_date')->nullable();
             $table->date('received_date')->nullable();
             $table->date('supplier_invoice_date')->nullable();

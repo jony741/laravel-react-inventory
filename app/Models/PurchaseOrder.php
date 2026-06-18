@@ -20,6 +20,12 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $expected_date
  * @property Carbon|null $received_date
  * @property string $status
+ * @property string $shipping_cost
+ * @property string $payment_status
+ * @property int|null $approved_by
+ * @property string $discount_type
+ * @property string $supplier_invoice_number
+ * @property Carbon|null $supplier_invoice_date
  * @property string $subtotal
  * @property string $tax
  * @property string $discount
@@ -30,7 +36,11 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
  */
-#[Fillable(['po_number', 'supplier_id', 'store_id', 'order_date', 'expected_date', 'received_date', 'status', 'subtotal', 'tax', 'discount', 'total_amount', 'notes', 'created_by'])]
+#[Fillable([
+    'po_number', 'supplier_id', 'store_id', 'order_date', 'expected_date', 'received_date',
+    'shipping_cost', 'payment_status', 'approved_by', 'discount_type', 'supplier_invoice_number',
+    'supplier_invoice_date', 'status', 'subtotal', 'tax', 'discount', 'total_amount', 'notes', 'created_by'
+])]
 class PurchaseOrder extends Model
 {
     /** @use HasFactory<PurchaseOrderFactory> */
@@ -42,6 +52,8 @@ class PurchaseOrder extends Model
             'order_date' => 'date',
             'expected_date' => 'date',
             'received_date' => 'date',
+            'supplier_invoice_date' => 'date',
+            'shipping_cost' => 'decimal:2',
             'subtotal' => 'decimal:2',
             'tax' => 'decimal:2',
             'discount' => 'decimal:2',
@@ -65,6 +77,12 @@ class PurchaseOrder extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /** @return BelongsTo<User, $this> */
+    public function approver(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approved_by');
     }
 
     /** @return HasMany<PurchaseOrderItem> */

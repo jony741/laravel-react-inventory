@@ -3,6 +3,7 @@
 use App\Http\Controllers\Crm\CustomerController;
 use App\Http\Controllers\Crm\SupplierController;
 use App\Http\Controllers\Inventory\ProductController;
+use App\Http\Controllers\Inventory\PurchaseOrderController;
 use App\Http\Controllers\Settings\BrandController;
 use App\Http\Controllers\Settings\CategoryController;
 use App\Http\Controllers\Settings\StoreController;
@@ -19,6 +20,8 @@ Route::middleware('auth')
     ->prefix('admin')
     ->group(function () {
         Route::resource('/inventory/products', ProductController::class);
+        Route::resource('/inventory/purchase-orders', PurchaseOrderController::class);
+        Route::patch('/inventory/purchase-orders/{purchase_order}/approve', [PurchaseOrderController::class, 'approve'])->name('purchase-orders.approve');
         Route::resource('/crm/customers', CustomerController::class);
         Route::resource('/crm/suppliers', SupplierController::class);
         Route::resource('/settings/brands', BrandController::class);
