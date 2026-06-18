@@ -1,6 +1,6 @@
 import { Form, Head } from '@inertiajs/react';
-import { Plus, Pencil, Trash2, Search, X, Package, ArrowLeft, Eye, Check, Info, Tag, Layers } from 'lucide-react';
-import { useState } from 'react';
+import { Plus, Pencil, Trash2, Search, X, Package, ArrowLeft, Eye, Check, Info, Tag, Layers, Upload, ImageIcon } from 'lucide-react';
+import { useState, useRef } from 'react';
 import ProductController from '@/actions/App/Http/Controllers/Inventory/ProductController';
 import DeleteConfirmationDialog from '@/components/delete-confirmation-dialog';
 import Heading from '@/components/heading';
@@ -103,6 +103,29 @@ export default function ProductsIndex({ products, categories, brands }: Props) {
     const [productStatus, setProductStatus] = useState(true);
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
     const [previewProduct, setPreviewProduct] = useState<Product | null>(null);
+    const [selectedImage, setSelectedImage] = useState<File | null>(null);
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            if (file.size > 2 * 1024 * 1024) {
+                alert('Image size must be less than 2MB');
+                return;
+            }
+            setSelectedImage(file);
+            setImagePreview(URL.createObjectURL(file));
+        }
+    };
+
+    const removeImage = () => {
+        setSelectedImage(null);
+        setImagePreview(null);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
 
     const openPreview = (product: Product) => {
         setPreviewProduct(product);
@@ -113,12 +136,16 @@ export default function ProductsIndex({ products, categories, brands }: Props) {
         setEditingProduct(null);
         setVariants([{ ...emptyVariant }]);
         setProductStatus(true);
+        setSelectedImage(null);
+        setImagePreview(null);
         setIsDialogOpen(true);
     };
 
     const openEditDialog = (product: Product) => {
         setEditingProduct(product);
         setProductStatus(product.is_active);
+        setSelectedImage(null);
+        setImagePreview(product.image ? `/storage/${product.image}` : null);
         if (product.variants && product.variants.length > 0) {
             setVariants(product.variants.map(v => ({
                 id: v.id,
@@ -246,9 +273,17 @@ export default function ProductsIndex({ products, categories, brands }: Props) {
                                             </td>
                                             <td className="px-4 py-3">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="flex h-10 w-10 items-center justify-center rounded-md bg-muted">
-                                                        <Package className="h-5 w-5 text-muted-foreground" />
-                                                    </div>
+                                                    {product.image ? (
+                                                        <img
+                                                            src={`/storage/${product.image}`}
+                                                            alt={product.name}
+                                                            className="h-10 w-10 rounded-md object-cover"
+                                                        />
+                                                    ) : (
+                                                        <div className="flex h-10 w-10 items-center justify-center rounded-md bg-muted">
+                                                            <Package className="h-5 w-5 text-muted-foreground" />
+                                                        </div>
+                                                    )}
                                                     <div>
                                                         <div className="font-medium">{product.name}</div>
                                                         <div className="text-xs text-muted-foreground">
@@ -344,10 +379,16 @@ export default function ProductsIndex({ products, categories, brands }: Props) {
                             : ProductController.store.form()
                         )}
                         method={editingProduct ? 'patch' : 'post'}
-                        onSuccess={() => setIsDialogOpen(false)}
+                        encType="multipart/form-data"
+                        onSuccess={() => {
+                            setIsDialogOpen(false);
+                            setSelectedImage(null);
+                            setImagePreview(null);
+                        }}
                         transform={(data) => ({
                             ...data,
                             is_active: productStatus,
+                            image: selectedImage,
                             variants: variants.map(v => ({
                                 ...v,
                                 is_active: v.is_active === true,
@@ -388,9 +429,17 @@ export default function ProductsIndex({ products, categories, brands }: Props) {
                                     <div className="px-6 py-4 border-b">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-3">
-                                                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
-                                                    <Package className="h-5 w-5 text-muted-foreground" />
-                                                </div>
+                                                {imagePreview ? (
+                                                    <img
+                                                        src={imagePreview}
+                                                        alt={editingProduct?.name || 'Product'}
+                                                        className="h-10 w-10 rounded-lg object-cover"
+                                                    />
+                                                ) : (
+                                                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                                                        <Package className="h-5 w-5 text-muted-foreground" />
+                                                    </div>
+                                                )}
                                                 <h1 className="text-xl font-semibold">
                                                     {editingProduct?.name || 'New Product'}
                                                 </h1>
@@ -444,6 +493,55 @@ export default function ProductsIndex({ products, categories, brands }: Props) {
                                                         className="bg-muted/50 border-0 resize-none"
                                                     />
                                                     <InputError message={errors.description} />
+                                                </div>
+
+                                                <div className="space-y-2">
+                                                    <Label className="text-xs text-muted-foreground">Product Image</Label>
+                                                    <div className="flex items-start gap-4">
+                                                        {imagePreview ? (
+                                                            <div className="relative">
+                                                                <img
+                                                                    src={imagePreview}
+                                                                    alt="Product preview"
+                                                                    className="h-24 w-24 rounded-lg object-cover border"
+                                                                />
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={removeImage}
+                                                                    className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-destructive text-white flex items-center justify-center hover:bg-destructive/90"
+                                                                >
+                                                                    <X className="h-3 w-3" />
+                                                                </button>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="flex h-24 w-24 items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/50">
+                                                                <ImageIcon className="h-8 w-8 text-muted-foreground/50" />
+                                                            </div>
+                                                        )}
+                                                        <div className="flex-1 space-y-2">
+                                                            <input
+                                                                ref={fileInputRef}
+                                                                type="file"
+                                                                accept="image/jpeg,image/png,image/jpg,image/gif,image/webp"
+                                                                onChange={handleImageChange}
+                                                                className="hidden"
+                                                                id="product-image"
+                                                            />
+                                                            <Button
+                                                                type="button"
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={() => fileInputRef.current?.click()}
+                                                            >
+                                                                <Upload className="mr-2 h-4 w-4" />
+                                                                {imagePreview ? 'Change Image' : 'Upload Image'}
+                                                            </Button>
+                                                            <p className="text-xs text-muted-foreground">
+                                                                PNG, JPG, GIF or WebP. Max 2MB.
+                                                            </p>
+                                                            <InputError message={errors.image} />
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -703,9 +801,17 @@ export default function ProductsIndex({ products, categories, brands }: Props) {
                         <div className="px-6 py-4 border-b">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
-                                        <Package className="h-5 w-5 text-muted-foreground" />
-                                    </div>
+                                    {previewProduct?.image ? (
+                                        <img
+                                            src={`/storage/${previewProduct.image}`}
+                                            alt={previewProduct.name}
+                                            className="h-10 w-10 rounded-lg object-cover"
+                                        />
+                                    ) : (
+                                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                                            <Package className="h-5 w-5 text-muted-foreground" />
+                                        </div>
+                                    )}
                                     <h1 className="text-xl font-semibold">
                                         {previewProduct?.name || 'Product'}
                                     </h1>
@@ -747,6 +853,21 @@ export default function ProductsIndex({ products, categories, brands }: Props) {
                                             <div className="bg-muted/50 rounded-md px-3 py-2 text-sm min-h-[80px]">
                                                 {previewProduct?.description || '-'}
                                             </div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <div className="text-xs text-muted-foreground">Product Image</div>
+                                            {previewProduct?.image ? (
+                                                <img
+                                                    src={`/storage/${previewProduct.image}`}
+                                                    alt={previewProduct.name}
+                                                    className="h-24 w-24 rounded-lg object-cover border"
+                                                />
+                                            ) : (
+                                                <div className="flex h-24 w-24 items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/50">
+                                                    <ImageIcon className="h-8 w-8 text-muted-foreground/50" />
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>

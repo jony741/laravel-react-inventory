@@ -66,6 +66,51 @@ export type ProductVariant = {
     price: string;
     reorder_level: number;
     is_active: boolean;
+    product?: Product;
+    created_at: string;
+    updated_at: string;
+};
+
+export type PurchaseOrderItem = {
+    id: number;
+    purchase_order_id: number;
+    variant_id: number;
+    qty: number;
+    cost: string;
+    subtotal: string;
+    discount_percentage: boolean;
+    discount: string | null;
+    tax_percentage: string | null;
+    received_qty: number;
+    variant?: ProductVariant;
+    created_at: string;
+    updated_at: string;
+};
+
+export type PurchaseOrder = {
+    id: number;
+    po_number: string;
+    supplier_id: number;
+    store_id: number;
+    order_date: string;
+    expected_date: string | null;
+    received_date: string | null;
+    shipping_cost: string;
+    payment_status: string;
+    approved_by: number | null;
+    discount_type: string;
+    supplier_invoice_number: string;
+    supplier_invoice_date: string | null;
+    status: 'DRAFT' | 'APPROVED' | 'PARTIALLY_RECEIVED' | 'RECEIVED' | 'CLOSED' | 'CANCELLED';
+    subtotal: string;
+    tax: string;
+    discount: string;
+    total_amount: string;
+    notes: string | null;
+    created_by: number | null;
+    supplier?: Supplier;
+    store?: Store;
+    items?: PurchaseOrderItem[];
     created_at: string;
     updated_at: string;
 };
@@ -75,6 +120,7 @@ export type Product = {
     name: string;
     slug: string;
     description: string | null;
+    image: string | null;
     category_id: number | null;
     brand_id: number | null;
     unit: string;

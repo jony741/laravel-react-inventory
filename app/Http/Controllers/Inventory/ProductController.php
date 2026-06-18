@@ -8,9 +8,10 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
-use Illuminate\Support\Str;
 
 class ProductController extends Controller
 {
@@ -27,14 +28,18 @@ class ProductController extends Controller
 
     public function store(ProductRequest $request): RedirectResponse
     {
-        $data = $request->safe()->except('variants');
+        $data = $request->safe()->except(['variants', 'image']);
         $data['slug'] = Str::slug($request->validated('name'));
+
+        if ($request->hasFile('image')) {
+            $data['image'] = $request->file('image')->store('products', 'public');
+        }
 
         $product = Product::create($data);
 
         if ($request->has('variants')) {
             foreach ($request->validated('variants') as $index => $variant) {
-                $variant['barcode'] = 'PRD' . str_pad($product->id, 5, '0', STR_PAD_LEFT) . str_pad($index + 1, 3, '0', STR_PAD_LEFT) . substr(time(), -4);
+                $variant['barcode'] = 'PRD'.str_pad($product->id, 5, '0', STR_PAD_LEFT).str_pad($index + 1, 3, '0', STR_PAD_LEFT).substr(time(), -4);
                 $product->variants()->create($variant);
             }
         }
@@ -46,8 +51,15 @@ class ProductController extends Controller
 
     public function update(ProductRequest $request, Product $product): RedirectResponse
     {
-        $data = $request->safe()->except('variants');
+        $data = $request->safe()->except(['variants', 'image']);
         $data['slug'] = Str::slug($request->validated('name'));
+
+        if ($request->hasFile('image')) {
+            if ($product->image) {
+                Storage::disk('public')->delete($product->image);
+            }
+            $data['image'] = $request->file('image')->store('products', 'public');
+        }
 
         $product->update($data);
 
@@ -64,7 +76,7 @@ class ProductController extends Controller
                     }
                 } else {
                     $newVariantIndex++;
-                    $variantData['barcode'] = 'PRD' . str_pad($product->id, 5, '0', STR_PAD_LEFT) . str_pad($newVariantIndex, 3, '0', STR_PAD_LEFT) . substr(time(), -4);
+                    $variantData['barcode'] = 'PRD'.str_pad($product->id, 5, '0', STR_PAD_LEFT).str_pad($newVariantIndex, 3, '0', STR_PAD_LEFT).substr(time(), -4);
                     $newVariant = $product->variants()->create($variantData);
                     $variantIds[] = $newVariant->id;
                 }
@@ -80,6 +92,9 @@ class ProductController extends Controller
 
     public function destroy(Product $product): RedirectResponse
     {
+        if ($product->image) {
+            Storage::disk('public')->delete($product->image);
+        }
         $product->variants()->delete();
         $product->delete();
 
