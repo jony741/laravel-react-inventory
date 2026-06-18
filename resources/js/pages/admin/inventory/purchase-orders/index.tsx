@@ -1,9 +1,9 @@
 import { Form, Head, router } from '@inertiajs/react';
 import {
-    Plus, Pencil, Trash2, Search, X, ShoppingCart, ArrowLeft, Eye, Check, FileText,
-    Building2, Store, Calendar, Package, Receipt, CheckCircle, Clock
+    Plus, Pencil, Trash2, Search, X, ShoppingCart, Eye, Check, FileText,
+    Building2, Package, Receipt, CheckCircle, Clock, AlertCircle, Loader2
 } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import PurchaseOrderController from '@/actions/App/Http/Controllers/Inventory/PurchaseOrderController';
 import DeleteConfirmationDialog from '@/components/delete-confirmation-dialog';
 import Heading from '@/components/heading';
@@ -14,6 +14,10 @@ import { Button } from '@/components/ui/button';
 import {
     Dialog,
     DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+    DialogFooter,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -75,6 +79,28 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
     const [previewOrder, setPreviewOrder] = useState<PurchaseOrder | null>(null);
     const [savedAt, setSavedAt] = useState<string | null>(null);
+    const [currentOrderStatus, setCurrentOrderStatus] = useState<'NEW' | 'DRAFT' | 'APPROVED' | 'RECEIVED'>('NEW');
+    const [currentOrderId, setCurrentOrderId] = useState<number | null>(null);
+    const [isApproveConfirmOpen, setIsApproveConfirmOpen] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isApproving, setIsApproving] = useState(false);
+    const [pendingNewOrder, setPendingNewOrder] = useState(false);
+
+    // Effect to detect when a new order has been created and update state
+    useEffect(() => {
+        if (pendingNewOrder && purchaseOrders?.data && purchaseOrders.data.length > 0) {
+            // Find the most recent order (should be first since sorted by latest)
+            const latestOrder = purchaseOrders.data[0];
+            if (latestOrder) {
+                setCurrentOrderId(latestOrder.id);
+                setCurrentOrderStatus('DRAFT');
+                setEditingOrder(latestOrder);
+                setPendingNewOrder(false);
+                setIsSubmitting(false);
+                setSavedAt(new Date().toISOString());
+            }
+        }
+    }, [purchaseOrders, pendingNewOrder]);
 
     const selectedSupplierData = useMemo(() => {
         return suppliers.find(s => s.id.toString() === selectedSupplier);
@@ -98,6 +124,10 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
         setOrderDate(new Date().toISOString().split('T')[0]);
         setExpectedDate('');
         setSupplierInvoiceNumber('');
+        setCurrentOrderStatus('NEW');
+        setCurrentOrderId(null);
+        setIsSubmitting(false);
+        setPendingNewOrder(false);
         setSupplierInvoiceDate('');
         setShippingCost('0');
         setDiscount('0');
@@ -120,6 +150,9 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
         setTax(order.tax || '0');
         setNotes(order.notes || '');
         setSavedAt(order.updated_at);
+        setCurrentOrderStatus(order.status as 'DRAFT' | 'APPROVED' | 'RECEIVED');
+        setCurrentOrderId(order.id);
+        setIsSubmitting(false);
         if (order.items && order.items.length > 0) {
             setOrderItems(order.items.map(item => ({
                 id: item.id,
@@ -238,11 +271,28 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
         );
     };
 
-    const handleApprove = (orderId: number) => {
+    const handleApproveClick = () => {
+        setIsApproveConfirmOpen(true);
+    };
+
+    const handleApproveConfirm = () => {
+        if (!currentOrderId) return;
+
+        setIsApproving(true);
         router.patch(
-            `/admin/inventory/purchase-orders/${orderId}/approve`,
+            `/admin/inventory/purchase-orders/${currentOrderId}/approve`,
             {},
-            { preserveScroll: true }
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setCurrentOrderStatus('APPROVED');
+                    setIsApproveConfirmOpen(false);
+                    setIsApproving(false);
+                },
+                onError: () => {
+                    setIsApproving(false);
+                },
+            }
         );
     };
 
@@ -373,15 +423,26 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
                 <DialogContent className="w-[90%] max-w-[90%] h-[95vh] p-0 gap-0 sm:max-w-[90%] flex flex-col overflow-hidden">
                     <Form
                         className="flex flex-col h-full"
-                        {...(editingOrder
-                            ? PurchaseOrderController.update.form(editingOrder)
+                        {...(currentOrderId && currentOrderStatus !== 'NEW'
+                            ? PurchaseOrderController.update.form({ id: currentOrderId } as PurchaseOrder)
                             : PurchaseOrderController.store.form()
                         )}
-                        method={editingOrder ? 'patch' : 'post'}
+                        method={currentOrderId && currentOrderStatus !== 'NEW' ? 'patch' : 'post'}
+                        onStart={() => {
+                            setIsSubmitting(true);
+                        }}
                         onSuccess={() => {
-                            if (!editingOrder) {
+                            // If this was a new order, set flag to detect the new order in useEffect
+                            if (currentOrderStatus === 'NEW') {
+                                setPendingNewOrder(true);
+                            } else {
+                                // For updates, just update the saved time
+                                setIsSubmitting(false);
                                 setSavedAt(new Date().toISOString());
                             }
+                        }}
+                        onError={() => {
+                            setIsSubmitting(false);
                         }}
                         transform={() => ({
                             supplier_id: selectedSupplier,
@@ -422,34 +483,104 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
                                             <X className="mr-2 h-4 w-4" />
                                             Discard
                                         </Button>
-                                        {(!editingOrder || editingOrder.status === 'DRAFT') && (
-                                            <Button type="submit" variant="outline" size="sm" disabled={processing}>
-                                                <FileText className="mr-2 h-4 w-4" />
-                                                {editingOrder ? 'Save Draft' : 'Save Draft'}
-                                            </Button>
+
+                                        {/* Save Draft Button - Only for NEW orders */}
+                                        {currentOrderStatus === 'NEW' && (
+                                            <div className="relative group">
+                                                <Button
+                                                    type="submit"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    disabled={processing || isSubmitting || pendingNewOrder}
+                                                >
+                                                    {processing || isSubmitting || pendingNewOrder ? (
+                                                        <>
+                                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                            Saving...
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <FileText className="mr-2 h-4 w-4" />
+                                                            Save Draft
+                                                        </>
+                                                    )}
+                                                </Button>
+                                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-popover border rounded-md shadow-md text-xs text-muted-foreground whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                                    Save as draft to edit later
+                                                </div>
+                                            </div>
                                         )}
-                                        {editingOrder && editingOrder.status === 'DRAFT' && (
-                                            <Button
-                                                type="button"
-                                                size="sm"
-                                                onClick={() => handleApprove(editingOrder.id)}
-                                                title="Approve this purchase order"
-                                            >
-                                                <CheckCircle className="mr-2 h-4 w-4" />
-                                                Approve
-                                            </Button>
+
+                                        {/* Update Button - For DRAFT orders */}
+                                        {currentOrderStatus === 'DRAFT' && (
+                                            <div className="relative group">
+                                                <Button
+                                                    type="submit"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    disabled={processing || isSubmitting}
+                                                >
+                                                    {processing || isSubmitting ? (
+                                                        <>
+                                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                            Updating...
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <FileText className="mr-2 h-4 w-4" />
+                                                            Update
+                                                        </>
+                                                    )}
+                                                </Button>
+                                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-popover border rounded-md shadow-md text-xs text-muted-foreground whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                                    Save changes to this draft order
+                                                </div>
+                                            </div>
                                         )}
-                                        {editingOrder && editingOrder.status === 'APPROVED' && (
-                                            <Button
-                                                type="button"
-                                                size="sm"
-                                                variant="default"
-                                                title="Create Goods Receipt Note"
-                                                disabled
-                                            >
-                                                <Receipt className="mr-2 h-4 w-4" />
-                                                Receipt
-                                            </Button>
+
+                                        {/* Approve Button - For DRAFT orders */}
+                                        {currentOrderStatus === 'DRAFT' && (
+                                            <div className="relative group">
+                                                <Button
+                                                    type="button"
+                                                    size="sm"
+                                                    onClick={handleApproveClick}
+                                                    disabled={isApproving || processing || isSubmitting}
+                                                >
+                                                    {isApproving ? (
+                                                        <>
+                                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                            Approving...
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <CheckCircle className="mr-2 h-4 w-4" />
+                                                            Approve
+                                                        </>
+                                                    )}
+                                                </Button>
+                                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-popover border rounded-md shadow-md text-xs text-muted-foreground whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                                    Approve this order to proceed with receiving goods
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* GRN Button - For APPROVED orders */}
+                                        {currentOrderStatus === 'APPROVED' && (
+                                            <div className="relative group">
+                                                <Button
+                                                    type="button"
+                                                    size="sm"
+                                                    variant="default"
+                                                    disabled
+                                                >
+                                                    <Receipt className="mr-2 h-4 w-4" />
+                                                    GRN
+                                                </Button>
+                                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-popover border rounded-md shadow-md text-xs text-muted-foreground whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                                    Create Goods Receipt Note (Coming soon)
+                                                </div>
+                                            </div>
                                         )}
                                     </div>
                                 </div>
@@ -470,7 +601,7 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
                                                     </p>
                                                 </div>
                                             </div>
-                                            {editingOrder && getStatusBadge(editingOrder.status)}
+                                            {currentOrderStatus !== 'NEW' && getStatusBadge(currentOrderStatus)}
                                         </div>
 
                                         {/* Two Column Layout */}
@@ -924,6 +1055,62 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
                             </div>
                         )}
                     </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Approve Confirmation Dialog */}
+            <Dialog open={isApproveConfirmOpen} onOpenChange={setIsApproveConfirmOpen}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <AlertCircle className="h-5 w-5 text-yellow-500" />
+                            Approve Purchase Order?
+                        </DialogTitle>
+                        <DialogDescription>
+                            Once approved, this purchase order cannot be edited. You will be able to receive goods against this order.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="rounded-lg bg-muted/50 p-4 space-y-2">
+                        <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">PO Number:</span>
+                            <span className="font-medium">{editingOrder?.po_number}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Supplier:</span>
+                            <span className="font-medium">{selectedSupplierData?.name}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Total Amount:</span>
+                            <span className="font-bold">${totals.total.toFixed(2)}</span>
+                        </div>
+                    </div>
+                    <DialogFooter className="gap-2 sm:gap-0">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setIsApproveConfirmOpen(false)}
+                            disabled={isApproving}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="button"
+                            onClick={handleApproveConfirm}
+                            disabled={isApproving}
+                        >
+                            {isApproving ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Approving...
+                                </>
+                            ) : (
+                                <>
+                                    <CheckCircle className="mr-2 h-4 w-4" />
+                                    Yes, Approve
+                                </>
+                            )}
+                        </Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
         </>
