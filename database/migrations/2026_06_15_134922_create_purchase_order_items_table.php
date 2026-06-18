@@ -15,7 +15,9 @@ return new class extends Migration
             $table->integer('qty');
             $table->decimal('cost', 12, 2);
             $table->decimal('subtotal', 14, 2);
-            $table->integer('received_qty')->default(0);
+            $table->boolean('discount_percentage')->default(false);
+            $table->string('discount')->nullable();
+            $table->string('tax_percentage')->nullable();
             $table->timestamps();
             $table->softDeletes();
 
