@@ -31,7 +31,7 @@ return new class extends Migration
 
             $table->integer('accepted_qty')->default(0);
             $table->integer('rejected_qty')->default(0);
-
+            $table->string('rejection_reason')->nullable();
             $table->decimal('unit_cost', 15, 2);
 
             $table->string('batch_number')->nullable();

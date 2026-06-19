@@ -20,6 +20,7 @@ return new class extends Migration
             $table->integer('qty_out')->default(0);
             $table->decimal('unit_cost', 12, 2)->default(0);
             $table->decimal('unit_price', 12, 2)->default(0);
+            $table->decimal('transaction_value', 12, 2)->default(0);
             $table->text('notes')->nullable();
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
