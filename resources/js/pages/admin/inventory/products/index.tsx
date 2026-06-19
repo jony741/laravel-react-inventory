@@ -5,7 +5,8 @@ import ProductController from '@/actions/App/Http/Controllers/Inventory/ProductC
 import DeleteConfirmationDialog from '@/components/delete-confirmation-dialog';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
-import Pagination, { type PaginationData } from '@/components/pagination';
+import Pagination from '@/components/pagination';
+import type {PaginationData} from '@/components/pagination';
 import TableSkeleton from '@/components/table-skeleton';
 import { Button } from '@/components/ui/button';
 import {
@@ -23,7 +24,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { index } from '@/routes/products';
-import type { Product, Brand, Category, ProductVariant } from '@/types';
+import type { Product, Brand, Category } from '@/types';
 
 // Switch component for toggle
 function Switch({ checked, onCheckedChange, id }: { checked: boolean; onCheckedChange: (checked: boolean) => void; id?: string }) {
@@ -109,11 +110,14 @@ export default function ProductsIndex({ products, categories, brands }: Props) {
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
+
         if (file) {
             if (file.size > 2 * 1024 * 1024) {
                 alert('Image size must be less than 2MB');
+
                 return;
             }
+
             setSelectedImage(file);
             setImagePreview(URL.createObjectURL(file));
         }
@@ -122,6 +126,7 @@ export default function ProductsIndex({ products, categories, brands }: Props) {
     const removeImage = () => {
         setSelectedImage(null);
         setImagePreview(null);
+
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
@@ -146,6 +151,7 @@ export default function ProductsIndex({ products, categories, brands }: Props) {
         setProductStatus(product.is_active);
         setSelectedImage(null);
         setImagePreview(product.image ? `/storage/${product.image}` : null);
+
         if (product.variants && product.variants.length > 0) {
             setVariants(product.variants.map(v => ({
                 id: v.id,
@@ -161,6 +167,7 @@ export default function ProductsIndex({ products, categories, brands }: Props) {
         } else {
             setVariants([{ ...emptyVariant }]);
         }
+
         setIsDialogOpen(true);
     };
 
@@ -181,19 +188,30 @@ export default function ProductsIndex({ products, categories, brands }: Props) {
     };
 
     const getPriceRange = (product: Product) => {
-        if (!product.variants || product.variants.length === 0) return '-';
+        if (!product.variants || product.variants.length === 0) {
+            return '-';
+        }
+
         const prices = product.variants.map(v => parseFloat(v.price));
         const min = Math.min(...prices);
         const max = Math.max(...prices);
-        if (min === max) return `৳${min.toFixed(0)}`;
+
+        if (min === max) {
+            return `৳${min.toFixed(0)}`;
+        }
+
         return `৳${min.toFixed(0)} - ৳${max.toFixed(0)}`;
     };
 
     const getVariantColors = (product: Product) => {
-        if (!product.variants) return [];
+        if (!product.variants) {
+            return [];
+        }
+
         const colors = product.variants
             .map(v => v.color)
             .filter((c): c is string => c !== null && c !== '');
+
         return [...new Set(colors)].slice(0, 3);
     };
 
@@ -395,6 +413,7 @@ export default function ProductsIndex({ products, categories, brands }: Props) {
                             })),
                         })}
                     >
+                        {/* eslint-disable-next-line @typescript-eslint/no-unused-vars */}
                         {({ errors, processing, data }) => (
                             <>
                                 {/* Header - Sticky */}
@@ -787,7 +806,10 @@ export default function ProductsIndex({ products, categories, brands }: Props) {
                             </Button>
                             <Button type="button" size="sm" onClick={() => {
                                 setIsPreviewOpen(false);
-                                if (previewProduct) openEditDialog(previewProduct);
+                                
+                                if (previewProduct) {
+                                    openEditDialog(previewProduct);
+                                }
                             }}>
                                 <Pencil className="mr-2 h-4 w-4" />
                                 Edit
