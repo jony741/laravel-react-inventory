@@ -8,7 +8,8 @@ import PurchaseOrderController from '@/actions/App/Http/Controllers/Inventory/Pu
 import DeleteConfirmationDialog from '@/components/delete-confirmation-dialog';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
-import Pagination, { type PaginationData } from '@/components/pagination';
+import Pagination from '@/components/pagination';
+import type { PaginationData } from '@/components/pagination';
 import TableSkeleton from '@/components/table-skeleton';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,7 +18,7 @@ import {
     DialogHeader,
     DialogTitle,
     DialogDescription,
-    DialogFooter,
+    DialogFooter
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -26,7 +27,7 @@ import {
     SelectContent,
     SelectItem,
     SelectTrigger,
-    SelectValue,
+    SelectValue
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { index } from '@/routes/purchase-orders';
@@ -50,14 +51,16 @@ const emptyOrderItem: OrderItemFormData = {
     subtotal: '0',
     discount_percentage: false,
     discount: '',
-    tax_percentage: '',
+    tax_percentage: ''
 };
 
 type Props = {
     purchaseOrders?: PaginationData<PurchaseOrder>;
     suppliers: Pick<Supplier, 'id' | 'name' | 'phone' | 'address'>[];
     stores: Pick<StoreType, 'id' | 'name'>[];
-    variants: (Pick<ProductVariant, 'id' | 'product_id' | 'sku' | 'barcode' | 'color' | 'size' | 'cost' | 'price'> & { product?: { id: number; name: string } })[];
+    variants: (Pick<ProductVariant, 'id' | 'product_id' | 'sku' | 'barcode' | 'color' | 'size' | 'cost' | 'price'> & {
+        product?: { id: number; name: string }
+    })[];
 };
 
 export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores, variants }: Props) {
@@ -92,7 +95,9 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
         if (pendingNewOrder && purchaseOrders?.data && purchaseOrders.data.length > 0) {
             // Find the most recent order (should be first since sorted by latest)
             const latestOrder = purchaseOrders.data[0];
+
             if (latestOrder) {
+                // eslint-disable-next-line react-hooks/set-state-in-effect
                 setCurrentOrderId(latestOrder.id);
                 setCurrentOrderStatus('DRAFT');
                 setEditingOrder(latestOrder);
@@ -108,8 +113,12 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
     }, [selectedSupplier, suppliers]);
 
     const filteredVariants = useMemo(() => {
-        if (!variantSearch) return variants.slice(0, 10);
+        if (!variantSearch) {
+            return variants.slice(0, 10);
+        }
+
         const search = variantSearch.toLowerCase();
+
         return variants.filter(v =>
             v.sku.toLowerCase().includes(search) ||
             v.barcode?.toLowerCase().includes(search) ||
@@ -157,6 +166,7 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
         setCurrentOrderStatus(order.status as 'DRAFT' | 'APPROVED' | 'RECEIVED');
         setCurrentOrderId(order.id);
         setIsSubmitting(false);
+
         if (order.items && order.items.length > 0) {
             setOrderItems(order.items.map(item => ({
                 id: item.id,
@@ -166,11 +176,12 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
                 subtotal: item.subtotal,
                 discount_percentage: item.discount_percentage,
                 discount: item.discount || '',
-                tax_percentage: item.tax_percentage || '',
+                tax_percentage: item.tax_percentage || ''
             })));
         } else {
             setOrderItems([]);
         }
+
         setIsDialogOpen(true);
     };
 
@@ -181,6 +192,7 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
 
     const addOrderItem = (variant: typeof variants[0]) => {
         const existingIndex = orderItems.findIndex(item => item.variant_id === variant.id);
+
         if (existingIndex >= 0) {
             const updated = [...orderItems];
             updated[existingIndex].qty += 1;
@@ -191,9 +203,10 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
                 ...emptyOrderItem,
                 variant_id: variant.id,
                 cost: variant.cost,
-                subtotal: variant.cost,
+                subtotal: variant.cost
             }]);
         }
+
         setVariantSearch('');
     };
 
@@ -229,10 +242,21 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
 
     const getVariantDisplay = (variantId: number) => {
         const variant = variants.find(v => v.id === variantId);
-        if (!variant) return 'Unknown';
+
+        if (!variant) {
+            return 'Unknown';
+        }
+
         const parts = [variant.product?.name, variant.sku];
-        if (variant.color) parts.push(variant.color);
-        if (variant.size) parts.push(variant.size);
+
+        if (variant.color) {
+            parts.push(variant.color);
+        }
+
+        if (variant.size) {
+            parts.push(variant.size);
+        }
+
         return parts.filter(Boolean).join(' - ');
     };
 
@@ -256,7 +280,7 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
             discount: totalDiscount,
             shipping: totalShipping,
             total,
-            itemCount: orderItems.reduce((sum, item) => sum + item.qty, 0),
+            itemCount: orderItems.reduce((sum, item) => sum + item.qty, 0)
         };
     };
 
@@ -264,18 +288,43 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
 
     const getStatusBadge = (status: string) => {
         const statusConfig: Record<string, { bg: string; text: string; icon: React.ReactNode }> = {
-            'DRAFT': { bg: 'bg-gray-100 dark:bg-gray-800', text: 'text-gray-700 dark:text-gray-300', icon: <FileText className="h-3 w-3" /> },
-            'APPROVED': { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-700 dark:text-blue-400', icon: <CheckCircle className="h-3 w-3" /> },
-            'PARTIALLY_RECEIVED': { bg: 'bg-yellow-100 dark:bg-yellow-900/30', text: 'text-yellow-700 dark:text-yellow-400', icon: <Clock className="h-3 w-3" /> },
-            'RECEIVED': { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-700 dark:text-green-400', icon: <Check className="h-3 w-3" /> },
-            'CLOSED': { bg: 'bg-purple-100 dark:bg-purple-900/30', text: 'text-purple-700 dark:text-purple-400', icon: <Check className="h-3 w-3" /> },
-            'CANCELLED': { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-700 dark:text-red-400', icon: <X className="h-3 w-3" /> },
+            'DRAFT': {
+                bg: 'bg-gray-100 dark:bg-gray-800',
+                text: 'text-gray-700 dark:text-gray-300',
+                icon: <FileText className="h-3 w-3" />
+            },
+            'APPROVED': {
+                bg: 'bg-blue-100 dark:bg-blue-900/30',
+                text: 'text-blue-700 dark:text-blue-400',
+                icon: <CheckCircle className="h-3 w-3" />
+            },
+            'PARTIALLY_RECEIVED': {
+                bg: 'bg-yellow-100 dark:bg-yellow-900/30',
+                text: 'text-yellow-700 dark:text-yellow-400',
+                icon: <Clock className="h-3 w-3" />
+            },
+            'RECEIVED': {
+                bg: 'bg-green-100 dark:bg-green-900/30',
+                text: 'text-green-700 dark:text-green-400',
+                icon: <Check className="h-3 w-3" />
+            },
+            'CLOSED': {
+                bg: 'bg-purple-100 dark:bg-purple-900/30',
+                text: 'text-purple-700 dark:text-purple-400',
+                icon: <Check className="h-3 w-3" />
+            },
+            'CANCELLED': {
+                bg: 'bg-red-100 dark:bg-red-900/30',
+                text: 'text-red-700 dark:text-red-400',
+                icon: <X className="h-3 w-3" />
+            }
         };
 
         const config = statusConfig[status] || statusConfig['DRAFT'];
 
         return (
-            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${config.bg} ${config.text}`}>
+            <span
+                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${config.bg} ${config.text}`}>
                 {config.icon}
                 {status.replace('_', ' ')}
             </span>
@@ -287,7 +336,9 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
     };
 
     const handleApproveConfirm = () => {
-        if (!currentOrderId) return;
+        if (!currentOrderId) {
+            return;
+        }
 
         setIsApproving(true);
         router.patch(
@@ -302,7 +353,7 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
                 },
                 onError: () => {
                     setIsApproving(false);
-                },
+                }
             }
         );
     };
@@ -338,84 +389,85 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
                 <div className="rounded-md border border-sidebar-border/70 dark:border-sidebar-border">
                     <table className="w-full text-left text-sm">
                         <thead className="bg-muted/50 text-muted-foreground">
-                            <tr>
-                                <th className="px-4 py-3 font-medium">PO Number</th>
-                                <th className="px-4 py-3 font-medium">Supplier</th>
-                                <th className="px-4 py-3 font-medium">Store</th>
-                                <th className="px-4 py-3 font-medium">Order Date</th>
-                                <th className="px-4 py-3 font-medium">Items</th>
-                                <th className="px-4 py-3 font-medium">Total</th>
-                                <th className="px-4 py-3 font-medium">Status</th>
-                                <th className="px-4 py-3 font-medium text-right">Actions</th>
-                            </tr>
+                        <tr>
+                            <th className="px-4 py-3 font-medium">PO Number</th>
+                            <th className="px-4 py-3 font-medium">Supplier</th>
+                            <th className="px-4 py-3 font-medium">Store</th>
+                            <th className="px-4 py-3 font-medium">Order Date</th>
+                            <th className="px-4 py-3 font-medium">Items</th>
+                            <th className="px-4 py-3 font-medium">Total</th>
+                            <th className="px-4 py-3 font-medium">Status</th>
+                            <th className="px-4 py-3 font-medium text-right">Actions</th>
+                        </tr>
                         </thead>
                         <tbody className="divide-y divide-sidebar-border/70 dark:divide-sidebar-border">
-                            {!purchaseOrders ? (
-                                <TableSkeleton rows={10} columns={8} />
-                            ) : (
-                                <>
-                                    {purchaseOrders.data.map((order) => (
-                                        <tr key={order.id}>
-                                            <td className="px-4 py-3">
-                                                <div className="flex items-center gap-2">
-                                                    <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-                                                    <span className="font-medium">{order.po_number}</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-4 py-3 text-muted-foreground">
-                                                {order.supplier?.name || '-'}
-                                            </td>
-                                            <td className="px-4 py-3 text-muted-foreground">
-                                                {order.store?.name || '-'}
-                                            </td>
-                                            <td className="px-4 py-3 text-muted-foreground">
-                                                {new Date(order.order_date).toLocaleDateString()}
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                <span className="font-medium">{order.items?.length || 0}</span>
-                                            </td>
-                                            <td className="px-4 py-3 font-medium">
-                                                ${parseFloat(order.total_amount).toFixed(2)}
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                {getStatusBadge(order.status)}
-                                            </td>
-                                            <td className="px-4 py-3 text-right">
-                                                <div className="flex justify-end gap-2">
-                                                    <Button variant="ghost" size="icon" onClick={() => openPreview(order)}>
-                                                        <Eye className="h-4 w-4" />
+                        {!purchaseOrders ? (
+                            <TableSkeleton rows={10} columns={8} />
+                        ) : (
+                            <>
+                                {purchaseOrders.data.map((order) => (
+                                    <tr key={order.id}>
+                                        <td className="px-4 py-3">
+                                            <div className="flex items-center gap-2">
+                                                <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+                                                <span className="font-medium">{order.po_number}</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-3 text-muted-foreground">
+                                            {order.supplier?.name || '-'}
+                                        </td>
+                                        <td className="px-4 py-3 text-muted-foreground">
+                                            {order.store?.name || '-'}
+                                        </td>
+                                        <td className="px-4 py-3 text-muted-foreground">
+                                            {new Date(order.order_date).toLocaleDateString()}
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <span className="font-medium">{order.items?.length || 0}</span>
+                                        </td>
+                                        <td className="px-4 py-3 font-medium">
+                                            ${parseFloat(order.total_amount).toFixed(2)}
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            {getStatusBadge(order.status)}
+                                        </td>
+                                        <td className="px-4 py-3 text-right">
+                                            <div className="flex justify-end gap-2">
+                                                <Button variant="ghost" size="icon" onClick={() => openPreview(order)}>
+                                                    <Eye className="h-4 w-4" />
+                                                </Button>
+                                                {order.status === 'DRAFT' && (
+                                                    <Button variant="ghost" size="icon"
+                                                            onClick={() => openEditDialog(order)}>
+                                                        <Pencil className="h-4 w-4" />
                                                     </Button>
-                                                    {order.status === 'DRAFT' && (
-                                                        <Button variant="ghost" size="icon" onClick={() => openEditDialog(order)}>
-                                                            <Pencil className="h-4 w-4" />
+                                                )}
+                                                {order.status === 'DRAFT' && (
+                                                    <DeleteConfirmationDialog
+                                                        action={PurchaseOrderController.destroy(order)}
+                                                        title="Delete purchase order?"
+                                                        description={`This will permanently delete "${order.po_number}" and all its items.`}
+                                                        confirmLabel="Delete"
+                                                        processingLabel="Deleting..."
+                                                    >
+                                                        <Button variant="ghost" size="icon">
+                                                            <Trash2 className="h-4 w-4 text-destructive" />
                                                         </Button>
-                                                    )}
-                                                    {order.status === 'DRAFT' && (
-                                                        <DeleteConfirmationDialog
-                                                            action={PurchaseOrderController.destroy(order)}
-                                                            title="Delete purchase order?"
-                                                            description={`This will permanently delete "${order.po_number}" and all its items.`}
-                                                            confirmLabel="Delete"
-                                                            processingLabel="Deleting..."
-                                                        >
-                                                            <Button variant="ghost" size="icon">
-                                                                <Trash2 className="h-4 w-4 text-destructive" />
-                                                            </Button>
-                                                        </DeleteConfirmationDialog>
-                                                    )}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                    {purchaseOrders.data.length === 0 && (
-                                        <tr>
-                                            <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
-                                                No purchase orders found.
-                                            </td>
-                                        </tr>
-                                    )}
-                                </>
-                            )}
+                                                    </DeleteConfirmationDialog>
+                                                )}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                                {purchaseOrders.data.length === 0 && (
+                                    <tr>
+                                        <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
+                                            No purchase orders found.
+                                        </td>
+                                    </tr>
+                                )}
+                            </>
+                        )}
                         </tbody>
                     </table>
                     {purchaseOrders && purchaseOrders.total > purchaseOrders.per_page && (
@@ -431,12 +483,13 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
 
             {/* Add/Edit Dialog */}
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="w-[90%] max-w-[90%] h-[95vh] p-0 gap-0 sm:max-w-[90%] flex flex-col overflow-hidden">
+                <DialogContent
+                    className="w-[90%] max-w-[90%] h-[95vh] p-0 gap-0 sm:max-w-[90%] flex flex-col overflow-hidden">
                     <Form
                         className="flex flex-col h-full"
                         {...(currentOrderId && currentOrderStatus !== 'NEW'
-                            ? PurchaseOrderController.update.form({ id: currentOrderId } as PurchaseOrder)
-                            : PurchaseOrderController.store.form()
+                                ? PurchaseOrderController.update.form({ id: currentOrderId } as PurchaseOrder)
+                                : PurchaseOrderController.store.form()
                         )}
                         method={currentOrderId && currentOrderStatus !== 'NEW' ? 'patch' : 'post'}
                         onStart={() => {
@@ -467,13 +520,14 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
                             discount: discount,
                             tax: tax,
                             notes: notes,
-                            items: orderItems,
+                            items: orderItems
                         })}
                     >
                         {({ errors, processing }) => (
                             <>
                                 {/* Header */}
-                                <div className="sticky top-0 z-10 bg-background flex items-center justify-between border-b px-6 py-3">
+                                <div
+                                    className="sticky top-0 z-10 bg-background flex items-center justify-between border-b px-6 py-3">
                                     <div className="flex items-center gap-4">
                                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                             <ShoppingCart className="h-4 w-4" />
@@ -491,7 +545,8 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
                                         )}
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <Button type="button" variant="ghost" size="sm" onClick={() => setIsDialogOpen(false)}>
+                                        <Button type="button" variant="ghost" size="sm"
+                                                onClick={() => setIsDialogOpen(false)}>
                                             <X className="mr-2 h-4 w-4" />
                                             Discard
                                         </Button>
@@ -517,7 +572,8 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
                                                         </>
                                                     )}
                                                 </Button>
-                                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-popover border rounded-md shadow-md text-xs text-muted-foreground whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                                <div
+                                                    className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-popover border rounded-md shadow-md text-xs text-muted-foreground whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                                                     Save as draft to edit later
                                                 </div>
                                             </div>
@@ -544,7 +600,8 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
                                                         </>
                                                     )}
                                                 </Button>
-                                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-popover border rounded-md shadow-md text-xs text-muted-foreground whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                                <div
+                                                    className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-popover border rounded-md shadow-md text-xs text-muted-foreground whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                                                     Save changes to this draft order
                                                 </div>
                                             </div>
@@ -571,7 +628,8 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
                                                         </>
                                                     )}
                                                 </Button>
-                                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-popover border rounded-md shadow-md text-xs text-muted-foreground whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                                <div
+                                                    className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-popover border rounded-md shadow-md text-xs text-muted-foreground whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                                                     Approve this order to proceed with receiving goods
                                                 </div>
                                             </div>
@@ -589,7 +647,8 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
                                                     <Receipt className="mr-2 h-4 w-4" />
                                                     GRN
                                                 </Button>
-                                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-popover border rounded-md shadow-md text-xs text-muted-foreground whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                                <div
+                                                    className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-popover border rounded-md shadow-md text-xs text-muted-foreground whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                                                     Create Goods Receipt Note (Coming soon)
                                                 </div>
                                             </div>
@@ -625,7 +684,8 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
                                                     SUPPLIER
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <Label className="text-xs text-muted-foreground">Select supplier</Label>
+                                                    <Label className="text-xs text-muted-foreground">Select
+                                                        supplier</Label>
                                                     <Select
                                                         value={selectedSupplier}
                                                         onValueChange={setSelectedSupplier}
@@ -635,7 +695,8 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
                                                         </SelectTrigger>
                                                         <SelectContent>
                                                             {suppliers.map(supplier => (
-                                                                <SelectItem key={supplier.id} value={supplier.id.toString()}>
+                                                                <SelectItem key={supplier.id}
+                                                                            value={supplier.id.toString()}>
                                                                     {supplier.name}
                                                                 </SelectItem>
                                                             ))}
@@ -664,7 +725,8 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
                                                 </div>
                                                 <div className="grid grid-cols-3 gap-4">
                                                     <div className="space-y-2">
-                                                        <Label className="text-xs text-muted-foreground">Deliver to store</Label>
+                                                        <Label className="text-xs text-muted-foreground">Deliver to
+                                                            store</Label>
                                                         <Select
                                                             value={selectedStore}
                                                             onValueChange={setSelectedStore}
@@ -674,7 +736,8 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
                                                             </SelectTrigger>
                                                             <SelectContent>
                                                                 {stores.map(store => (
-                                                                    <SelectItem key={store.id} value={store.id.toString()}>
+                                                                    <SelectItem key={store.id}
+                                                                                value={store.id.toString()}>
                                                                         {store.name}
                                                                     </SelectItem>
                                                                 ))}
@@ -683,7 +746,8 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
                                                         <InputError message={errors.store_id} />
                                                     </div>
                                                     <div className="space-y-2">
-                                                        <Label className="text-xs text-muted-foreground">Order date</Label>
+                                                        <Label className="text-xs text-muted-foreground">Order
+                                                            date</Label>
                                                         <Input
                                                             type="date"
                                                             value={orderDate}
@@ -693,7 +757,8 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
                                                         <InputError message={errors.order_date} />
                                                     </div>
                                                     <div className="space-y-2">
-                                                        <Label className="text-xs text-muted-foreground">Expected by</Label>
+                                                        <Label className="text-xs text-muted-foreground">Expected
+                                                            by</Label>
                                                         <Input
                                                             type="date"
                                                             value={expectedDate}
@@ -702,7 +767,8 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
                                                         />
                                                     </div>
                                                     <div className="space-y-2">
-                                                        <Label className="text-xs text-muted-foreground">Supplier invoice no.</Label>
+                                                        <Label className="text-xs text-muted-foreground">Supplier
+                                                            invoice no.</Label>
                                                         <Input
                                                             type="text"
                                                             value={supplierInvoiceNumber}
@@ -712,7 +778,8 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
                                                         />
                                                     </div>
                                                     <div className="space-y-2">
-                                                        <Label className="text-xs text-muted-foreground">Supplier invoice date</Label>
+                                                        <Label className="text-xs text-muted-foreground">Supplier
+                                                            invoice date</Label>
                                                         <Input
                                                             type="date"
                                                             value={supplierInvoiceDate}
@@ -721,7 +788,8 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
                                                         />
                                                     </div>
                                                     <div className="space-y-2">
-                                                        <Label className="text-xs text-muted-foreground">Discount type</Label>
+                                                        <Label className="text-xs text-muted-foreground">Discount
+                                                            type</Label>
                                                         <Select
                                                             value={discountType}
                                                             onValueChange={(value) => setDiscountType(value as 'FIXED' | 'PERCENTAGE')}
@@ -731,7 +799,8 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
                                                             </SelectTrigger>
                                                             <SelectContent>
                                                                 <SelectItem value="FIXED">Fixed Amount ($)</SelectItem>
-                                                                <SelectItem value="PERCENTAGE">Percentage (%)</SelectItem>
+                                                                <SelectItem value="PERCENTAGE">Percentage
+                                                                    (%)</SelectItem>
                                                             </SelectContent>
                                                         </Select>
                                                     </div>
@@ -755,86 +824,95 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
                                             <div className="rounded-lg border overflow-hidden">
                                                 <table className="w-full text-sm">
                                                     <thead className="bg-muted/50">
-                                                        <tr className="text-muted-foreground">
-                                                            <th className="px-4 py-3 text-left font-medium">Product / Variant</th>
-                                                            <th className="px-4 py-3 text-center font-medium w-24">Qty</th>
-                                                            <th className="px-4 py-3 text-center font-medium w-28">Unit cost</th>
-                                                            <th className="px-4 py-3 text-center font-medium w-28">Discount %</th>
-                                                            <th className="px-4 py-3 text-center font-medium w-28">Discount</th>
-                                                            <th className="px-4 py-3 text-right font-medium w-28">Subtotal</th>
-                                                            <th className="px-4 py-3 w-10"></th>
-                                                        </tr>
+                                                    <tr className="text-muted-foreground">
+                                                        <th className="px-4 py-3 text-left font-medium">Product /
+                                                            Variant
+                                                        </th>
+                                                        <th className="px-4 py-3 text-center font-medium w-24">Qty</th>
+                                                        <th className="px-4 py-3 text-center font-medium w-28">Unit
+                                                            cost
+                                                        </th>
+                                                        <th className="px-4 py-3 text-center font-medium w-28">Discount
+                                                            %
+                                                        </th>
+                                                        <th className="px-4 py-3 text-center font-medium w-28">Discount</th>
+                                                        <th className="px-4 py-3 text-right font-medium w-28">Subtotal</th>
+                                                        <th className="px-4 py-3 w-10"></th>
+                                                    </tr>
                                                     </thead>
                                                     <tbody className="divide-y divide-border">
-                                                        {orderItems.map((item, idx) => (
-                                                            <tr key={idx} className="bg-card">
-                                                                <td className="px-4 py-3">
-                                                                    <div className="flex items-center gap-3">
-                                                                        <div className="flex h-10 w-10 items-center justify-center rounded-md bg-muted">
-                                                                            <Package className="h-5 w-5 text-muted-foreground" />
-                                                                        </div>
-                                                                        <div>
-                                                                            <div className="font-medium">{getVariantDisplay(item.variant_id)}</div>
-                                                                            <div className="text-xs text-muted-foreground">
-                                                                                {variants.find(v => v.id === item.variant_id)?.sku}
-                                                                            </div>
+                                                    {orderItems.map((item, idx) => (
+                                                        <tr key={idx} className="bg-card">
+                                                            <td className="px-4 py-3">
+                                                                <div className="flex items-center gap-3">
+                                                                    <div
+                                                                        className="flex h-10 w-10 items-center justify-center rounded-md bg-muted">
+                                                                        <Package
+                                                                            className="h-5 w-5 text-muted-foreground" />
+                                                                    </div>
+                                                                    <div>
+                                                                        <div
+                                                                            className="font-medium">{getVariantDisplay(item.variant_id)}</div>
+                                                                        <div className="text-xs text-muted-foreground">
+                                                                            {variants.find(v => v.id === item.variant_id)?.sku}
                                                                         </div>
                                                                     </div>
-                                                                </td>
-                                                                <td className="px-4 py-3 text-center">
-                                                                    <Input
-                                                                        type="number"
-                                                                        value={item.qty}
-                                                                        onChange={(e) => updateOrderItem(idx, 'qty', parseInt(e.target.value) || 1)}
-                                                                        className="h-8 w-20 text-center bg-muted/50 border-0 mx-auto"
-                                                                        min="1"
-                                                                    />
-                                                                </td>
-                                                                <td className="px-4 py-3 text-center">
-                                                                    <Input
-                                                                        type="number"
-                                                                        value={item.cost}
-                                                                        onChange={(e) => updateOrderItem(idx, 'cost', e.target.value)}
-                                                                        className="h-8 w-24 text-center bg-muted/50 border-0 mx-auto"
-                                                                        min="0"
-                                                                        step="0.01"
-                                                                    />
-                                                                </td>
-                                                                <td className="px-4 py-3 text-center">
-                                                                    <input
-                                                                        type="checkbox"
-                                                                        checked={item.discount_percentage}
-                                                                        onChange={(e) => updateOrderItem(idx, 'discount_percentage', e.target.checked)}
-                                                                        className="h-4 w-4 rounded border-gray-300"
-                                                                    />
-                                                                </td>
-                                                                <td className="px-4 py-3 text-center">
-                                                                    <Input
-                                                                        type="number"
-                                                                        value={item.discount}
-                                                                        onChange={(e) => updateOrderItem(idx, 'discount', e.target.value)}
-                                                                        className="h-8 w-24 text-center bg-muted/50 border-0 mx-auto"
-                                                                        min="0"
-                                                                        step="0.01"
-                                                                        placeholder={item.discount_percentage ? '%' : '$'}
-                                                                    />
-                                                                </td>
-                                                                <td className="px-4 py-3 text-right font-medium">
-                                                                    ${parseFloat(item.subtotal).toFixed(2)}
-                                                                </td>
-                                                                <td className="px-4 py-3">
-                                                                    <Button
-                                                                        type="button"
-                                                                        variant="ghost"
-                                                                        size="icon"
-                                                                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                                                                        onClick={() => removeOrderItem(idx)}
-                                                                    >
-                                                                        <Trash2 className="h-4 w-4" />
-                                                                    </Button>
-                                                                </td>
-                                                            </tr>
-                                                        ))}
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-4 py-3 text-center">
+                                                                <Input
+                                                                    type="number"
+                                                                    value={item.qty}
+                                                                    onChange={(e) => updateOrderItem(idx, 'qty', parseInt(e.target.value) || 1)}
+                                                                    className="h-8 w-20 text-center bg-muted/50 border-0 mx-auto"
+                                                                    min="1"
+                                                                />
+                                                            </td>
+                                                            <td className="px-4 py-3 text-center">
+                                                                <Input
+                                                                    type="number"
+                                                                    value={item.cost}
+                                                                    onChange={(e) => updateOrderItem(idx, 'cost', e.target.value)}
+                                                                    className="h-8 w-24 text-center bg-muted/50 border-0 mx-auto"
+                                                                    min="0"
+                                                                    step="0.01"
+                                                                />
+                                                            </td>
+                                                            <td className="px-4 py-3 text-center">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={item.discount_percentage}
+                                                                    onChange={(e) => updateOrderItem(idx, 'discount_percentage', e.target.checked)}
+                                                                    className="h-4 w-4 rounded border-gray-300"
+                                                                />
+                                                            </td>
+                                                            <td className="px-4 py-3 text-center">
+                                                                <Input
+                                                                    type="number"
+                                                                    value={item.discount}
+                                                                    onChange={(e) => updateOrderItem(idx, 'discount', e.target.value)}
+                                                                    className="h-8 w-24 text-center bg-muted/50 border-0 mx-auto"
+                                                                    min="0"
+                                                                    step="0.01"
+                                                                    placeholder={item.discount_percentage ? '%' : '$'}
+                                                                />
+                                                            </td>
+                                                            <td className="px-4 py-3 text-right font-medium">
+                                                                ${parseFloat(item.subtotal).toFixed(2)}
+                                                            </td>
+                                                            <td className="px-4 py-3">
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                                                    onClick={() => removeOrderItem(idx)}
+                                                                >
+                                                                    <Trash2 className="h-4 w-4" />
+                                                                </Button>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
                                                     </tbody>
                                                 </table>
                                             </div>
@@ -842,7 +920,8 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
                                             {/* Add Item Search */}
                                             <div className="flex items-center gap-4">
                                                 <div className="relative flex-1">
-                                                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                                                    <Search
+                                                        className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                                                     <Input
                                                         placeholder="Search product or scan barcode to add..."
                                                         value={variantSearch}
@@ -850,7 +929,8 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
                                                         className="pl-9 bg-muted/50 border-0"
                                                     />
                                                     {variantSearch && (
-                                                        <div className="absolute top-full left-0 right-0 mt-1 bg-popover border rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
+                                                        <div
+                                                            className="absolute top-full left-0 right-0 mt-1 bg-popover border rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
                                                             {filteredVariants.map(variant => (
                                                                 <button
                                                                     key={variant.id}
@@ -859,18 +939,21 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
                                                                     onClick={() => addOrderItem(variant)}
                                                                 >
                                                                     <div>
-                                                                        <div className="font-medium">{variant.product?.name}</div>
+                                                                        <div
+                                                                            className="font-medium">{variant.product?.name}</div>
                                                                         <div className="text-xs text-muted-foreground">
                                                                             {variant.sku}
                                                                             {variant.color && ` · ${variant.color}`}
                                                                             {variant.size && ` · ${variant.size}`}
                                                                         </div>
                                                                     </div>
-                                                                    <span className="text-sm font-medium">${variant.cost}</span>
+                                                                    <span
+                                                                        className="text-sm font-medium">${variant.cost}</span>
                                                                 </button>
                                                             ))}
                                                             {filteredVariants.length === 0 && (
-                                                                <div className="px-4 py-3 text-center text-muted-foreground">
+                                                                <div
+                                                                    className="px-4 py-3 text-center text-muted-foreground">
                                                                     No products found
                                                                 </div>
                                                             )}
@@ -911,8 +994,10 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
                                                 </div>
                                                 <div className="space-y-3">
                                                     <div className="flex items-center justify-between">
-                                                        <span className="text-muted-foreground">Subtotal ({totals.itemCount} units)</span>
-                                                        <span className="font-medium">${totals.subtotal.toFixed(2)}</span>
+                                                        <span
+                                                            className="text-muted-foreground">Subtotal ({totals.itemCount} units)</span>
+                                                        <span
+                                                            className="font-medium">${totals.subtotal.toFixed(2)}</span>
                                                     </div>
                                                     <div className="flex items-center justify-between">
                                                         <span className="text-muted-foreground flex items-center gap-1">
@@ -929,7 +1014,8 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
                                                                 placeholder={discountType === 'PERCENTAGE' ? '%' : '৳'}
                                                             />
                                                             {discountType === 'PERCENTAGE' && (
-                                                                <span className="text-sm text-muted-foreground w-20 text-right">
+                                                                <span
+                                                                    className="text-sm text-muted-foreground w-20 text-right">
                                                                     = ৳{totals.discount.toFixed(2)}
                                                                 </span>
                                                             )}
@@ -963,7 +1049,8 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
                                                     </div>
                                                     <div className="border-t pt-3 flex items-center justify-between">
                                                         <span className="font-semibold">Total</span>
-                                                        <span className="text-xl font-bold">${totals.total.toFixed(2)}</span>
+                                                        <span
+                                                            className="text-xl font-bold">${totals.total.toFixed(2)}</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -978,9 +1065,11 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
 
             {/* Preview Dialog */}
             <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-                <DialogContent className="w-[80%] max-w-[80%] h-[95vh] p-0 gap-0 sm:max-w-[80%] flex flex-col overflow-hidden">
+                <DialogContent
+                    className="w-[80%] max-w-[80%] h-[95vh] p-0 gap-0 sm:max-w-[80%] flex flex-col overflow-hidden">
                     {/* Header */}
-                    <div className="sticky top-0 z-10 bg-background flex items-center justify-between border-b px-10 py-4">
+                    <div
+                        className="sticky top-0 z-10 bg-background flex items-center justify-between border-b px-10 py-4">
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <ShoppingCart className="h-4 w-4" />
                             <span>Purchase orders</span>
@@ -997,7 +1086,10 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
                             {previewOrder?.status === 'DRAFT' && (
                                 <Button type="button" size="sm" onClick={() => {
                                     setIsPreviewOpen(false);
-                                    if (previewOrder) openEditDialog(previewOrder);
+
+                                    if (previewOrder) {
+                                        openEditDialog(previewOrder);
+                                    }
                                 }}>
                                     <Pencil className="mr-2 h-4 w-4" />
                                     Edit
@@ -1076,33 +1168,33 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
                             <div className="rounded-lg border overflow-hidden">
                                 <table className="w-full text-sm">
                                     <thead className="bg-muted/50">
-                                        <tr className="text-muted-foreground">
-                                            <th className="px-4 py-3 text-left font-medium">#</th>
-                                            <th className="px-4 py-3 text-left font-medium">Product</th>
-                                            <th className="px-4 py-3 text-center font-medium">Qty</th>
-                                            <th className="px-4 py-3 text-right font-medium">Cost</th>
-                                            <th className="px-4 py-3 text-right font-medium">Subtotal</th>
-                                        </tr>
+                                    <tr className="text-muted-foreground">
+                                        <th className="px-4 py-3 text-left font-medium">#</th>
+                                        <th className="px-4 py-3 text-left font-medium">Product</th>
+                                        <th className="px-4 py-3 text-center font-medium">Qty</th>
+                                        <th className="px-4 py-3 text-right font-medium">Cost</th>
+                                        <th className="px-4 py-3 text-right font-medium">Subtotal</th>
+                                    </tr>
                                     </thead>
                                     <tbody className="divide-y divide-border">
-                                        {previewOrder?.items?.map((item, idx) => (
-                                            <tr key={item.id} className="bg-card">
-                                                <td className="px-4 py-3 text-muted-foreground">{idx + 1}</td>
-                                                <td className="px-4 py-3">
-                                                    <div className="font-medium">
-                                                        {item.variant?.product?.name}
-                                                    </div>
-                                                    <div className="text-xs text-muted-foreground">
-                                                        {item.variant?.sku}
-                                                        {item.variant?.color && ` · ${item.variant.color}`}
-                                                        {item.variant?.size && ` / ${item.variant.size}`}
-                                                    </div>
-                                                </td>
-                                                <td className="px-4 py-3 text-center">{item.qty}</td>
-                                                <td className="px-4 py-3 text-right">${parseFloat(item.cost).toFixed(2)}</td>
-                                                <td className="px-4 py-3 text-right font-medium">${parseFloat(item.subtotal).toFixed(2)}</td>
-                                            </tr>
-                                        ))}
+                                    {previewOrder?.items?.map((item, idx) => (
+                                        <tr key={item.id} className="bg-card">
+                                            <td className="px-4 py-3 text-muted-foreground">{idx + 1}</td>
+                                            <td className="px-4 py-3">
+                                                <div className="font-medium">
+                                                    {item.variant?.product?.name}
+                                                </div>
+                                                <div className="text-xs text-muted-foreground">
+                                                    {item.variant?.sku}
+                                                    {item.variant?.color && ` · ${item.variant.color}`}
+                                                    {item.variant?.size && ` / ${item.variant.size}`}
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-3 text-center">{item.qty}</td>
+                                            <td className="px-4 py-3 text-right">${parseFloat(item.cost).toFixed(2)}</td>
+                                            <td className="px-4 py-3 text-right font-medium">${parseFloat(item.subtotal).toFixed(2)}</td>
+                                        </tr>
+                                    ))}
                                     </tbody>
                                 </table>
                             </div>
@@ -1136,7 +1228,8 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
                                 </div>
                                 <div className="border-t pt-3 flex justify-between">
                                     <span className="font-semibold">Total</span>
-                                    <span className="text-xl font-bold">${parseFloat(previewOrder?.total_amount || '0').toFixed(2)}</span>
+                                    <span
+                                        className="text-xl font-bold">${parseFloat(previewOrder?.total_amount || '0').toFixed(2)}</span>
                                 </div>
                             </div>
                         </div>
@@ -1160,7 +1253,8 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
                             Approve Purchase Order?
                         </DialogTitle>
                         <DialogDescription>
-                            Once approved, this purchase order cannot be edited. You will be able to receive goods against this order.
+                            Once approved, this purchase order cannot be edited. You will be able to receive goods
+                            against this order.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="rounded-lg bg-muted/50 p-4 space-y-2">
@@ -1214,7 +1308,7 @@ PurchaseOrdersIndex.layout = {
     breadcrumbs: [
         {
             title: 'Purchase Orders',
-            href: index(),
-        },
-    ],
+            href: index()
+        }
+    ]
 };
