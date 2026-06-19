@@ -25,6 +25,7 @@ class PurchaseOrderRequest extends FormRequest
             'supplier_invoice_number' => ['nullable', 'string', 'max:100'],
             'supplier_invoice_date' => ['nullable', 'date'],
             'shipping_cost' => ['nullable', 'numeric', 'min:0'],
+            'discount_type' => ['nullable', 'string', 'in:FIXED,PERCENTAGE'],
             'discount' => ['nullable', 'numeric', 'min:0'],
             'tax' => ['nullable', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string'],

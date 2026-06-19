@@ -138,7 +138,12 @@ class PurchaseOrderController extends Controller
             $subtotal += $itemSubtotal;
         }
 
-        $discount = floatval($purchaseOrder->discount);
+        // Calculate discount based on discount_type
+        $discountValue = floatval($purchaseOrder->discount);
+        $discount = $purchaseOrder->discount_type === 'PERCENTAGE'
+            ? ($subtotal * $discountValue / 100)
+            : $discountValue;
+
         $shippingCost = floatval($purchaseOrder->shipping_cost);
         $totalAmount = $subtotal + $totalTax - $discount + $shippingCost;
 

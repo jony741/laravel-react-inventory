@@ -72,6 +72,7 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
     const [supplierInvoiceNumber, setSupplierInvoiceNumber] = useState<string>('');
     const [supplierInvoiceDate, setSupplierInvoiceDate] = useState<string>('');
     const [shippingCost, setShippingCost] = useState<string>('0');
+    const [discountType, setDiscountType] = useState<'FIXED' | 'PERCENTAGE'>('FIXED');
     const [discount, setDiscount] = useState<string>('0');
     const [tax, setTax] = useState<string>('0');
     const [notes, setNotes] = useState<string>('');
@@ -130,6 +131,7 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
         setPendingNewOrder(false);
         setSupplierInvoiceDate('');
         setShippingCost('0');
+        setDiscountType('FIXED');
         setDiscount('0');
         setTax('0');
         setNotes('');
@@ -141,11 +143,13 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
         setEditingOrder(order);
         setSelectedSupplier(order.supplier_id.toString());
         setSelectedStore(order.store_id.toString());
-        setOrderDate(order.order_date);
-        setExpectedDate(order.expected_date || '');
+        // Extract date part only (YYYY-MM-DD) for date inputs
+        setOrderDate(order.order_date ? order.order_date.split('T')[0] : '');
+        setExpectedDate(order.expected_date ? order.expected_date.split('T')[0] : '');
         setSupplierInvoiceNumber(order.supplier_invoice_number || '');
-        setSupplierInvoiceDate(order.supplier_invoice_date || '');
+        setSupplierInvoiceDate(order.supplier_invoice_date ? order.supplier_invoice_date.split('T')[0] : '');
         setShippingCost(order.shipping_cost || '0');
+        setDiscountType((order.discount_type as 'FIXED' | 'PERCENTAGE') || 'FIXED');
         setDiscount(order.discount || '0');
         setTax(order.tax || '0');
         setNotes(order.notes || '');
@@ -235,13 +239,20 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
     const calculateTotals = () => {
         const itemsSubtotal = orderItems.reduce((sum, item) => sum + parseFloat(item.subtotal || '0'), 0);
         const totalTax = parseFloat(tax) || 0;
-        const totalDiscount = parseFloat(discount) || 0;
+        const discountValue = parseFloat(discount) || 0;
         const totalShipping = parseFloat(shippingCost) || 0;
+
+        // Calculate discount based on type
+        const totalDiscount = discountType === 'PERCENTAGE'
+            ? (itemsSubtotal * discountValue / 100)
+            : discountValue;
+
         const total = itemsSubtotal + totalTax - totalDiscount + totalShipping;
 
         return {
             subtotal: itemsSubtotal,
             tax: totalTax,
+            discountValue: discountValue,
             discount: totalDiscount,
             shipping: totalShipping,
             total,
@@ -452,6 +463,7 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
                             supplier_invoice_number: supplierInvoiceNumber,
                             supplier_invoice_date: supplierInvoiceDate || null,
                             shipping_cost: shippingCost,
+                            discount_type: discountType,
                             discount: discount,
                             tax: tax,
                             notes: notes,
@@ -589,20 +601,20 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
                                 <div className="flex-1 overflow-y-auto">
                                     <div className="p-6 space-y-6">
                                         {/* Header Section */}
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-3">
-                                                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
-                                                    <ShoppingCart className="h-5 w-5 text-muted-foreground" />
-                                                </div>
-                                                <div>
-                                                    <h1 className="text-xl font-semibold">Purchase order</h1>
-                                                    <p className="text-sm text-muted-foreground">
-                                                        {editingOrder?.po_number || 'New'}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            {currentOrderStatus !== 'NEW' && getStatusBadge(currentOrderStatus)}
-                                        </div>
+                                        {/*<div className="flex items-center justify-between">*/}
+                                        {/*    <div className="flex items-center gap-3">*/}
+                                        {/*        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">*/}
+                                        {/*            <ShoppingCart className="h-5 w-5 text-muted-foreground" />*/}
+                                        {/*        </div>*/}
+                                        {/*        <div>*/}
+                                        {/*            <h1 className="text-xl font-semibold">Purchase order</h1>*/}
+                                        {/*            <p className="text-sm text-muted-foreground">*/}
+                                        {/*                {editingOrder?.po_number || 'New'}*/}
+                                        {/*            </p>*/}
+                                        {/*        </div>*/}
+                                        {/*    </div>*/}
+                                        {/*    {currentOrderStatus !== 'NEW' && getStatusBadge(currentOrderStatus)}*/}
+                                        {/*</div>*/}
 
                                         {/* Two Column Layout */}
                                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -650,7 +662,7 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
                                                     <FileText className="h-4 w-4 text-muted-foreground" />
                                                     ORDER DETAILS
                                                 </div>
-                                                <div className="grid grid-cols-2 gap-4">
+                                                <div className="grid grid-cols-3 gap-4">
                                                     <div className="space-y-2">
                                                         <Label className="text-xs text-muted-foreground">Deliver to store</Label>
                                                         <Select
@@ -670,7 +682,6 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
                                                         </Select>
                                                         <InputError message={errors.store_id} />
                                                     </div>
-                                                    <div />
                                                     <div className="space-y-2">
                                                         <Label className="text-xs text-muted-foreground">Order date</Label>
                                                         <Input
@@ -689,6 +700,40 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
                                                             onChange={(e) => setExpectedDate(e.target.value)}
                                                             className="bg-muted/50 border-0"
                                                         />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <Label className="text-xs text-muted-foreground">Supplier invoice no.</Label>
+                                                        <Input
+                                                            type="text"
+                                                            value={supplierInvoiceNumber}
+                                                            onChange={(e) => setSupplierInvoiceNumber(e.target.value)}
+                                                            placeholder="INV-001"
+                                                            className="bg-muted/50 border-0"
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <Label className="text-xs text-muted-foreground">Supplier invoice date</Label>
+                                                        <Input
+                                                            type="date"
+                                                            value={supplierInvoiceDate}
+                                                            onChange={(e) => setSupplierInvoiceDate(e.target.value)}
+                                                            className="bg-muted/50 border-0"
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <Label className="text-xs text-muted-foreground">Discount type</Label>
+                                                        <Select
+                                                            value={discountType}
+                                                            onValueChange={(value) => setDiscountType(value as 'FIXED' | 'PERCENTAGE')}
+                                                        >
+                                                            <SelectTrigger className="bg-muted/50 border-0 w-full">
+                                                                <SelectValue placeholder="Select type" />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem value="FIXED">Fixed Amount ($)</SelectItem>
+                                                                <SelectItem value="PERCENTAGE">Percentage (%)</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
                                                     </div>
                                                 </div>
                                             </div>
@@ -714,7 +759,7 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
                                                             <th className="px-4 py-3 text-left font-medium">Product / Variant</th>
                                                             <th className="px-4 py-3 text-center font-medium w-24">Qty</th>
                                                             <th className="px-4 py-3 text-center font-medium w-28">Unit cost</th>
-                                                            <th className="px-4 py-3 text-center font-medium w-20">Discount %</th>
+                                                            <th className="px-4 py-3 text-center font-medium w-28">Discount %</th>
                                                             <th className="px-4 py-3 text-center font-medium w-28">Discount</th>
                                                             <th className="px-4 py-3 text-right font-medium w-28">Subtotal</th>
                                                             <th className="px-4 py-3 w-10"></th>
@@ -871,20 +916,28 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
                                                     </div>
                                                     <div className="flex items-center justify-between">
                                                         <span className="text-muted-foreground flex items-center gap-1">
-                                                            Discount
+                                                            Discount {discountType === 'PERCENTAGE' && `(${totals.discountValue}%)`}
                                                         </span>
-                                                        <Input
-                                                            type="number"
-                                                            value={discount}
-                                                            onChange={(e) => setDiscount(e.target.value)}
-                                                            className="h-8 w-28 text-right bg-muted/50 border-0"
-                                                            min="0"
-                                                            step="0.01"
-                                                        />
+                                                        <div className="flex items-center gap-2">
+                                                            <Input
+                                                                type="number"
+                                                                value={discount}
+                                                                onChange={(e) => setDiscount(e.target.value)}
+                                                                className="h-8 w-28 text-right bg-muted/50 border-0"
+                                                                min="0"
+                                                                step="0.01"
+                                                                placeholder={discountType === 'PERCENTAGE' ? '%' : '৳'}
+                                                            />
+                                                            {discountType === 'PERCENTAGE' && (
+                                                                <span className="text-sm text-muted-foreground w-20 text-right">
+                                                                    = ৳{totals.discount.toFixed(2)}
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                     <div className="flex items-center justify-between">
                                                         <span className="text-muted-foreground flex items-center gap-1">
-                                                            Tax (5%)
+                                                            Tax
                                                         </span>
                                                         <Input
                                                             type="number"
@@ -970,14 +1023,47 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
                             {previewOrder && getStatusBadge(previewOrder.status)}
                         </div>
 
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            <div className="rounded-xl border bg-card p-5 space-y-2">
+                        {/* Order Details Grid */}
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div className="rounded-xl border bg-card p-4 space-y-1">
                                 <div className="text-xs text-muted-foreground">Supplier</div>
                                 <div className="font-medium">{previewOrder?.supplier?.name || '-'}</div>
                             </div>
-                            <div className="rounded-xl border bg-card p-5 space-y-2">
-                                <div className="text-xs text-muted-foreground">Store</div>
+                            <div className="rounded-xl border bg-card p-4 space-y-1">
+                                <div className="text-xs text-muted-foreground">Deliver to Store</div>
                                 <div className="font-medium">{previewOrder?.store?.name || '-'}</div>
+                            </div>
+                            <div className="rounded-xl border bg-card p-4 space-y-1">
+                                <div className="text-xs text-muted-foreground">Order Date</div>
+                                <div className="font-medium">
+                                    {previewOrder?.order_date ? new Date(previewOrder.order_date).toLocaleDateString() : '-'}
+                                </div>
+                            </div>
+                            <div className="rounded-xl border bg-card p-4 space-y-1">
+                                <div className="text-xs text-muted-foreground">Expected Date</div>
+                                <div className="font-medium">
+                                    {previewOrder?.expected_date ? new Date(previewOrder.expected_date).toLocaleDateString() : '-'}
+                                </div>
+                            </div>
+                            <div className="rounded-xl border bg-card p-4 space-y-1">
+                                <div className="text-xs text-muted-foreground">Supplier Invoice No.</div>
+                                <div className="font-medium">{previewOrder?.supplier_invoice_number || '-'}</div>
+                            </div>
+                            <div className="rounded-xl border bg-card p-4 space-y-1">
+                                <div className="text-xs text-muted-foreground">Supplier Invoice Date</div>
+                                <div className="font-medium">
+                                    {previewOrder?.supplier_invoice_date ? new Date(previewOrder.supplier_invoice_date).toLocaleDateString() : '-'}
+                                </div>
+                            </div>
+                            <div className="rounded-xl border bg-card p-4 space-y-1">
+                                <div className="text-xs text-muted-foreground">Discount Type</div>
+                                <div className="font-medium">
+                                    {previewOrder?.discount_type === 'PERCENTAGE' ? 'Percentage (%)' : 'Fixed Amount ($)'}
+                                </div>
+                            </div>
+                            <div className="rounded-xl border bg-card p-4 space-y-1">
+                                <div className="text-xs text-muted-foreground">Payment Status</div>
+                                <div className="font-medium">{previewOrder?.payment_status || '-'}</div>
                             </div>
                         </div>
 
@@ -1030,8 +1116,15 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
                                     <span>${parseFloat(previewOrder?.subtotal || '0').toFixed(2)}</span>
                                 </div>
                                 <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Discount</span>
-                                    <span>${parseFloat(previewOrder?.discount || '0').toFixed(2)}</span>
+                                    <span className="text-muted-foreground">
+                                        Discount {previewOrder?.discount_type === 'PERCENTAGE' ? `(${parseFloat(previewOrder?.discount || '0')}%)` : ''}
+                                    </span>
+                                    <span>
+                                        {previewOrder?.discount_type === 'PERCENTAGE'
+                                            ? `$${(parseFloat(previewOrder?.subtotal || '0') * parseFloat(previewOrder?.discount || '0') / 100).toFixed(2)}`
+                                            : `$${parseFloat(previewOrder?.discount || '0').toFixed(2)}`
+                                        }
+                                    </span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span className="text-muted-foreground">Tax</span>
