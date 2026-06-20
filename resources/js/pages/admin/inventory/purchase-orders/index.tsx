@@ -118,7 +118,7 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
                                                 <span className="font-medium">{order.items?.length || 0}</span>
                                             </td>
                                             <td className="px-4 py-3 font-medium">
-                                                ${parseFloat(order.total_amount).toFixed(2)}
+                                                ৳{parseFloat(order.total_amount).toFixed(2)}
                                             </td>
                                             <td className="px-4 py-3">
                                                 <StatusBadge status={order.status} />

@@ -10,7 +10,9 @@ export function PurchaseOrderPreview({
     order,
     onEdit,
 }: PurchaseOrderPreviewProps) {
-    if (!order) return null;
+    if (!order) {
+        return null;
+    }
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -94,7 +96,7 @@ export function PurchaseOrderPreview({
                         <div className="rounded-xl border bg-card p-4 space-y-1">
                             <div className="text-xs text-muted-foreground">Discount Type</div>
                             <div className="font-medium">
-                                {order.discount_type === 'PERCENTAGE' ? 'Percentage (%)' : 'Fixed Amount ($)'}
+                                {order.discount_type === 'PERCENTAGE' ? 'Percentage (%)' : 'Fixed Amount (৳)'}
                             </div>
                         </div>
                         <div className="rounded-xl border bg-card p-4 space-y-1">
@@ -116,7 +118,7 @@ export function PurchaseOrderPreview({
                                         <th className="px-4 py-3 text-left font-medium">#</th>
                                         <th className="px-4 py-3 text-left font-medium">Product</th>
                                         <th className="px-4 py-3 text-center font-medium">Qty</th>
-                                        <th className="px-4 py-3 text-right font-medium">Cost</th>
+                                        <th className="px-4 py-3 text-right font-medium">Purchase Price</th>
                                         <th className="px-4 py-3 text-right font-medium">Subtotal</th>
                                     </tr>
                                 </thead>
@@ -135,8 +137,8 @@ export function PurchaseOrderPreview({
                                                 </div>
                                             </td>
                                             <td className="px-4 py-3 text-center">{item.qty}</td>
-                                            <td className="px-4 py-3 text-right">${parseFloat(item.cost).toFixed(2)}</td>
-                                            <td className="px-4 py-3 text-right font-medium">${parseFloat(item.subtotal).toFixed(2)}</td>
+                                            <td className="px-4 py-3 text-right">৳{parseFloat(item.purchase_price).toFixed(2)}</td>
+                                            <td className="px-4 py-3 text-right font-medium">৳{parseFloat(item.subtotal).toFixed(2)}</td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -149,30 +151,38 @@ export function PurchaseOrderPreview({
                         <div className="w-80 rounded-xl border bg-card p-5 space-y-3">
                             <div className="flex justify-between">
                                 <span className="text-muted-foreground">Subtotal</span>
-                                <span>${parseFloat(order.subtotal || '0').toFixed(2)}</span>
+                                <span>৳{parseFloat(order.subtotal || '0').toFixed(2)}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-muted-foreground">
-                                    Discount {order.discount_type === 'PERCENTAGE' ? `(${parseFloat(order.discount || '0')}%)` : ''}
+                                    Discount {order.discount_type === 'PERCENTAGE' ? `(৳{parseFloat(order.discount || '0')}%)` : ''}
                                 </span>
                                 <span>
                                     {order.discount_type === 'PERCENTAGE'
-                                        ? `$${(parseFloat(order.subtotal || '0') * parseFloat(order.discount || '0') / 100).toFixed(2)}`
-                                        : `$${parseFloat(order.discount || '0').toFixed(2)}`
+                                        ? `৳${(parseFloat(order.subtotal || '0') * parseFloat(order.discount || '0') / 100).toFixed(2)}`
+                                        : `৳${parseFloat(order.discount || '0').toFixed(2)}`
                                     }
                                 </span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-muted-foreground">Tax</span>
-                                <span>${parseFloat(order.tax || '0').toFixed(2)}</span>
+                                <span>৳{parseFloat(order.tax || '0').toFixed(2)}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-muted-foreground">Shipping</span>
-                                <span>${parseFloat(order.shipping_cost || '0').toFixed(2)}</span>
+                                <span>৳{parseFloat(order.shipping_cost || '0').toFixed(2)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-muted-foreground">Custom Duty</span>
+                                <span>৳{parseFloat(order.custom_duty || '0').toFixed(2)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-muted-foreground">Other Cost</span>
+                                <span>৳{parseFloat(order.other_cost || '0').toFixed(2)}</span>
                             </div>
                             <div className="border-t pt-3 flex justify-between">
                                 <span className="font-semibold">Total</span>
-                                <span className="text-xl font-bold">${parseFloat(order.total_amount || '0').toFixed(2)}</span>
+                                <span className="text-xl font-bold">৳{parseFloat(order.total_amount || '0').toFixed(2)}</span>
                             </div>
                         </div>
                     </div>

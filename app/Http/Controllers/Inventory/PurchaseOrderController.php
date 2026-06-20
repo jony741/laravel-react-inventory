@@ -145,7 +145,9 @@ class PurchaseOrderController extends Controller
             : $discountValue;
 
         $shippingCost = floatval($purchaseOrder->shipping_cost);
-        $totalAmount = $subtotal + $totalTax - $discount + $shippingCost;
+        $customDuty = floatval($purchaseOrder->custom_duty);
+        $otherCost = floatval($purchaseOrder->other_cost);
+        $totalAmount = $subtotal + $totalTax - $discount + $shippingCost + $customDuty + $otherCost;
 
         $purchaseOrder->update([
             'subtotal' => $subtotal,

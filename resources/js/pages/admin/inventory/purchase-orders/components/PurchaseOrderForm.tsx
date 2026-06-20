@@ -535,7 +535,7 @@ export function PurchaseOrderForm({
                                                                 <SelectValue placeholder="Select type" />
                                                             </SelectTrigger>
                                                             <SelectContent>
-                                                                <SelectItem value="FIXED">Fixed Amount ($)</SelectItem>
+                                                                <SelectItem value="FIXED">Fixed Amount (৳)</SelectItem>
                                                                 <SelectItem value="PERCENTAGE">Percentage
                                                                     (%)</SelectItem>
                                                             </SelectContent>
@@ -631,11 +631,11 @@ export function PurchaseOrderForm({
                                                                     className="h-8 w-24 text-center bg-muted/50 border-0 mx-auto"
                                                                     min="0"
                                                                     step="0.01"
-                                                                    placeholder={item.discount_percentage ? '%' : '$'}
+                                                                    placeholder={item.discount_percentage ? '%' : '৳'}
                                                                 />
                                                             </td>
                                                             <td className="px-4 py-3 text-right font-medium">
-                                                                ${parseFloat(item.subtotal).toFixed(2)}
+                                                                ৳{parseFloat(item.subtotal).toFixed(2)}
                                                             </td>
                                                             <td className="px-4 py-3">
                                                                 <Button
@@ -685,7 +685,7 @@ export function PurchaseOrderForm({
                                                                         </div>
                                                                     </div>
                                                                     <span
-                                                                        className="text-sm font-medium">${variant.price}</span>
+                                                                        className="text-sm font-medium">৳{variant.price}</span>
                                                                 </button>
                                                             ))}
                                                             {filteredVariants.length === 0 && (
@@ -730,7 +730,7 @@ export function PurchaseOrderForm({
                                                         <span
                                                             className="text-muted-foreground">Subtotal ({totals.itemCount} units)</span>
                                                         <span
-                                                            className="font-medium">${totals.subtotal.toFixed(2)}</span>
+                                                            className="font-medium">৳{totals.subtotal.toFixed(2)}</span>
                                                     </div>
                                                     <div className="flex items-center justify-between">
                                                         <span className="text-muted-foreground flex items-center gap-1">
@@ -744,7 +744,7 @@ export function PurchaseOrderForm({
                                                                 className="h-8 w-28 text-right bg-muted/50 border-0"
                                                                 min="0"
                                                                 step="0.01"
-                                                                placeholder={discountType === 'PERCENTAGE' ? '%' : '$'}
+                                                                placeholder={discountType === 'PERCENTAGE' ? '%' : '৳'}
                                                             />
                                                             {discountType === 'PERCENTAGE' && (
                                                                 <span
@@ -805,7 +805,7 @@ export function PurchaseOrderForm({
                                                     <div className="border-t pt-3 flex items-center justify-between">
                                                         <span className="font-semibold">Total</span>
                                                         <span
-                                                            className="text-xl font-bold">${totals.total.toFixed(2)}</span>
+                                                            className="text-xl font-bold">৳{totals.total.toFixed(2)}</span>
                                                     </div>
                                                 </div>
                                             </div>
