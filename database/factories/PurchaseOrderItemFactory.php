@@ -16,14 +16,14 @@ class PurchaseOrderItemFactory extends Factory
     public function definition(): array
     {
         $qty = fake()->numberBetween(1, 100);
-        $cost = fake()->randomFloat(2, 5, 100);
+        $purchasePrice = fake()->randomFloat(2, 5, 100);
 
         return [
             'purchase_order_id' => PurchaseOrder::factory(),
             'variant_id' => ProductVariant::factory(),
             'qty' => $qty,
-            'cost' => $cost,
-            'subtotal' => round($qty * $cost, 2),
+            'purchase_price' => $purchasePrice,
+            'subtotal' => round($qty * $purchasePrice, 2),
             'received_qty' => 0,
         ];
     }

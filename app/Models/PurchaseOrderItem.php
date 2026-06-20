@@ -15,7 +15,7 @@ use Illuminate\Support\Carbon;
  * @property int $purchase_order_id
  * @property int $variant_id
  * @property int $qty
- * @property string $cost
+ * @property string $purchase_price
  * @property string $subtotal
  * @property bool $discount_percentage
  * @property string|null $discount
@@ -25,7 +25,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
  */
-#[Fillable(['purchase_order_id', 'variant_id', 'qty', 'cost', 'subtotal', 'discount_percentage', 'discount', 'tax_percentage', 'received_qty'])]
+#[Fillable(['purchase_order_id', 'variant_id', 'qty', 'purchase_price', 'subtotal', 'discount_percentage', 'discount', 'tax_percentage', 'received_qty'])]
 class PurchaseOrderItem extends Model
 {
     /** @use HasFactory<PurchaseOrderItemFactory> */
@@ -36,7 +36,7 @@ class PurchaseOrderItem extends Model
         return [
             'qty' => 'integer',
             'received_qty' => 'integer',
-            'cost' => 'decimal:2',
+            'purchase_price' => 'decimal:2',
             'subtotal' => 'decimal:2',
             'discount_percentage' => 'boolean',
         ];

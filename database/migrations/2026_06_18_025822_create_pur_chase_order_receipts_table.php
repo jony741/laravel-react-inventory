@@ -33,6 +33,8 @@ return new class extends Migration
             $table->date('supplier_invoice_date')->nullable();
 
             $table->decimal('shipping_cost', 15, 2)->default(0);
+            $table->decimal('custom_duty', 15, 2)->default(0);
+            $table->decimal('other_cost', 15, 2)->default(0);
 
             $table->enum('status', [
                 'DRAFT',

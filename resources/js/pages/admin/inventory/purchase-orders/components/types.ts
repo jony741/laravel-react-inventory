@@ -4,7 +4,7 @@ export type OrderItemFormData = {
     id?: number;
     variant_id: number;
     qty: number;
-    cost: string;
+    purchase_price: string;
     subtotal: string;
     discount_percentage: boolean;
     discount: string;
@@ -14,7 +14,7 @@ export type OrderItemFormData = {
 export const emptyOrderItem: OrderItemFormData = {
     variant_id: 0,
     qty: 1,
-    cost: '',
+    purchase_price: '',
     subtotal: '0',
     discount_percentage: false,
     discount: '',
@@ -23,11 +23,11 @@ export const emptyOrderItem: OrderItemFormData = {
 
 export type SupplierOption = Pick<Supplier, 'id' | 'name' | 'phone' | 'address'>;
 export type StoreOption = Pick<StoreType, 'id' | 'name'>;
-export type VariantOption = Pick<ProductVariant, 'id' | 'product_id' | 'sku' | 'barcode' | 'color' | 'size' | 'cost' | 'price'> & {
+export type VariantOption = Pick<ProductVariant, 'id' | 'product_id' | 'sku' | 'barcode' | 'color' | 'size' | 'price'> & {
     product?: { id: number; name: string };
 };
 
-export type OrderStatus = 'NEW' | 'DRAFT' | 'APPROVED' | 'RECEIVED';
+export type OrderStatus = 'NEW' | 'DRAFT' | 'APPROVED' | 'PARTIALLY_RECEIVED' | 'RECEIVED';
 
 export type PurchaseOrderFormProps = {
     open: boolean;

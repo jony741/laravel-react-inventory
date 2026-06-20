@@ -18,9 +18,11 @@ return new class extends Migration
             $table->unsignedBigInteger('reference_id')->nullable();
             $table->integer('qty_in')->default(0);
             $table->integer('qty_out')->default(0);
-            $table->decimal('unit_cost', 12, 2)->default(0);
-            $table->decimal('unit_price', 12, 2)->default(0);
-            $table->decimal('transaction_value', 12, 2)->default(0);
+            $table->decimal('unit_purchase_cost_price', 15, 2)->default(0);
+            $table->decimal('unit_shipping_cost', 15, 2)->default(0);
+            $table->decimal('unit_custom_duty', 15, 2)->default(0);
+            $table->decimal('unit_other_cost', 15, 2)->default(0);
+            $table->decimal('total_cost_price', 15, 2)->default(0);
             $table->text('notes')->nullable();
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();

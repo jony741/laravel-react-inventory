@@ -15,7 +15,6 @@ return new class extends Migration
             $table->string('barcode')->unique()->nullable();
             $table->string('color')->nullable();
             $table->string('size')->nullable();
-            $table->decimal('cost', 12, 2)->default(0);
             $table->decimal('price', 12, 2)->default(0);
             $table->integer('reorder_level')->default(0);
             $table->boolean('is_active')->default(true);

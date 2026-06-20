@@ -1,0 +1,499 @@
+import { Form, router } from '@inertiajs/react';
+import {
+    Package, Check, FileText, Building2, Receipt, Loader2, ArrowLeft, Calculator
+} from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import InputError from '@/components/input-error';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import type { PurchaseOrder } from '@/types';
+import type { GRNItemFormData, StoreOption, CostDistributionMode } from './types';
+
+type Props = {
+    purchaseOrder: PurchaseOrder;
+    stores: StoreOption[];
+};
+
+export function GoodsReceiptForm({ purchaseOrder, stores }: Props) {
+    const [selectedStore, setSelectedStore] = useState<string>(purchaseOrder.store_id.toString());
+    const [receivedDate, setReceivedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+    const [supplierInvoiceNo, setSupplierInvoiceNo] = useState<string>(purchaseOrder.supplier_invoice_number || '');
+    const [supplierInvoiceDate, setSupplierInvoiceDate] = useState<string>(
+        purchaseOrder.supplier_invoice_date ? purchaseOrder.supplier_invoice_date.split('T')[0] : ''
+    );
+    const [shippingCost, setShippingCost] = useState<string>(purchaseOrder.shipping_cost || '0');
+    const [customDuty, setCustomDuty] = useState<string>(purchaseOrder.custom_duty || '0');
+    const [otherCost, setOtherCost] = useState<string>(purchaseOrder.other_cost || '0');
+    const [costDistributionMode, setCostDistributionMode] = useState<CostDistributionMode>('UNIT_WISE');
+    const [notes, setNotes] = useState<string>('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const [items, setItems] = useState<GRNItemFormData[]>([]);
+
+    useEffect(() => {
+        if (purchaseOrder.items) {
+            const grnItems: GRNItemFormData[] = purchaseOrder.items.map(item => {
+                const pendingQty = item.qty - item.received_qty;
+                return {
+                    purchase_order_item_id: item.id,
+                    product_variant_id: item.variant_id,
+                    variant_name: item.variant?.product?.name || 'Unknown',
+                    sku: item.variant?.sku || '',
+                    ordered_qty: item.qty,
+                    pending_qty: pendingQty,
+                    received_qty: pendingQty,
+                    accepted_qty: pendingQty,
+                    rejected_qty: 0,
+                    rejection_reason: '',
+                    unit_purchase_cost_price: item.purchase_price,
+                    unit_shipping_cost: '0',
+                    unit_custom_duty: '0',
+                    unit_other_cost: '0',
+                    total_cost_price: '0',
+                    batch_number: '',
+                    expiry_date: '',
+                    notes: ''
+                };
+            }).filter(item => item.pending_qty > 0);
+
+            setItems(grnItems);
+        }
+    }, [purchaseOrder]);
+
+    useEffect(() => {
+        distributeCosts();
+    }, [shippingCost, customDuty, otherCost, costDistributionMode, items.map(i => i.accepted_qty).join(',')]);
+
+    const distributeCosts = () => {
+        const totalShipping = parseFloat(shippingCost) || 0;
+        const totalCustomDuty = parseFloat(customDuty) || 0;
+        const totalOtherCost = parseFloat(otherCost) || 0;
+
+        if (items.length === 0) return;
+
+        const updated = [...items];
+
+        if (costDistributionMode === 'ITEM_WISE') {
+            const itemCount = items.filter(i => i.accepted_qty > 0).length || 1;
+            const perItemShipping = totalShipping / itemCount;
+            const perItemCustomDuty = totalCustomDuty / itemCount;
+            const perItemOtherCost = totalOtherCost / itemCount;
+
+            updated.forEach(item => {
+                if (item.accepted_qty > 0) {
+                    item.unit_shipping_cost = (perItemShipping / item.accepted_qty).toFixed(2);
+                    item.unit_custom_duty = (perItemCustomDuty / item.accepted_qty).toFixed(2);
+                    item.unit_other_cost = (perItemOtherCost / item.accepted_qty).toFixed(2);
+                } else {
+                    item.unit_shipping_cost = '0';
+                    item.unit_custom_duty = '0';
+                    item.unit_other_cost = '0';
+                }
+                calculateItemTotal(item);
+            });
+        } else {
+            const totalUnits = items.reduce((sum, item) => sum + item.accepted_qty, 0) || 1;
+            const perUnitShipping = totalShipping / totalUnits;
+            const perUnitCustomDuty = totalCustomDuty / totalUnits;
+            const perUnitOtherCost = totalOtherCost / totalUnits;
+
+            updated.forEach(item => {
+                item.unit_shipping_cost = perUnitShipping.toFixed(2);
+                item.unit_custom_duty = perUnitCustomDuty.toFixed(2);
+                item.unit_other_cost = perUnitOtherCost.toFixed(2);
+                calculateItemTotal(item);
+            });
+        }
+
+        setItems(updated);
+    };
+
+    const calculateItemTotal = (item: GRNItemFormData) => {
+        const unitPurchasePrice = parseFloat(item.unit_purchase_cost_price) || 0;
+        const unitShipping = parseFloat(item.unit_shipping_cost) || 0;
+        const unitCustomDuty = parseFloat(item.unit_custom_duty) || 0;
+        const unitOtherCost = parseFloat(item.unit_other_cost) || 0;
+        const totalUnitCost = unitPurchasePrice + unitShipping + unitCustomDuty + unitOtherCost;
+        item.total_cost_price = (item.accepted_qty * totalUnitCost).toFixed(2);
+    };
+
+    const updateItem = (index: number, field: keyof GRNItemFormData, value: string | number) => {
+        const updated = [...items];
+        (updated[index] as Record<string, unknown>)[field] = value;
+
+        if (field === 'received_qty') {
+            const receivedQty = Number(value);
+            updated[index].accepted_qty = receivedQty;
+            updated[index].rejected_qty = 0;
+        }
+
+        if (field === 'accepted_qty' || field === 'rejected_qty') {
+            const acceptedQty = field === 'accepted_qty' ? Number(value) : updated[index].accepted_qty;
+            const rejectedQty = field === 'rejected_qty' ? Number(value) : updated[index].rejected_qty;
+            updated[index].received_qty = acceptedQty + rejectedQty;
+        }
+
+        calculateItemTotal(updated[index]);
+        setItems(updated);
+    };
+
+    const totals = useMemo(() => {
+        const itemsTotal = items.reduce((sum, item) => sum + parseFloat(item.total_cost_price || '0'), 0);
+        const totalAccepted = items.reduce((sum, item) => sum + item.accepted_qty, 0);
+        const totalRejected = items.reduce((sum, item) => sum + item.rejected_qty, 0);
+
+        return {
+            itemsTotal,
+            totalAccepted,
+            totalRejected,
+            shipping: parseFloat(shippingCost) || 0,
+            customDuty: parseFloat(customDuty) || 0,
+            otherCost: parseFloat(otherCost) || 0
+        };
+    }, [items, shippingCost, customDuty, otherCost]);
+
+    const handleBack = () => {
+        router.visit('/admin/inventory/purchase-orders');
+    };
+
+    return (
+        <Form
+            className="flex flex-col h-full"
+            action="/admin/inventory/goods-receipts"
+            method="post"
+            onStart={() => setIsSubmitting(true)}
+            onSuccess={() => {
+                setIsSubmitting(false);
+            }}
+            onError={() => setIsSubmitting(false)}
+            transform={() => ({
+                purchase_order_id: purchaseOrder.id,
+                store_id: selectedStore,
+                received_date: receivedDate,
+                supplier_invoice_no: supplierInvoiceNo,
+                supplier_invoice_date: supplierInvoiceDate || null,
+                shipping_cost: shippingCost,
+                custom_duty: customDuty,
+                other_cost: otherCost,
+                notes,
+                items: items.map(item => ({
+                    purchase_order_item_id: item.purchase_order_item_id,
+                    product_variant_id: item.product_variant_id,
+                    ordered_qty: item.ordered_qty,
+                    received_qty: item.received_qty,
+                    accepted_qty: item.accepted_qty,
+                    rejected_qty: item.rejected_qty,
+                    rejection_reason: item.rejection_reason,
+                    unit_purchase_cost_price: item.unit_purchase_cost_price,
+                    unit_shipping_cost: item.unit_shipping_cost,
+                    unit_custom_duty: item.unit_custom_duty,
+                    unit_other_cost: item.unit_other_cost,
+                    total_cost_price: item.total_cost_price,
+                    batch_number: item.batch_number,
+                    expiry_date: item.expiry_date || null,
+                    notes: item.notes
+                }))
+            })}
+        >
+            {({ errors, processing }) => (
+                <>
+                    {/* Header */}
+                    <div className="sticky top-0 z-10 bg-background flex items-center justify-between border-b px-6 py-3">
+                        <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <Receipt className="h-4 w-4" />
+                                <span>Goods Receipt</span>
+                                <span className="text-muted-foreground/50">›</span>
+                                <span className="text-foreground font-medium">
+                                    New GRN for {purchaseOrder.po_number}
+                                </span>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Button type="button" variant="ghost" size="sm" onClick={handleBack}>
+                                <ArrowLeft className="mr-2 h-4 w-4" />
+                                Back
+                            </Button>
+                            <Button type="submit" size="sm" disabled={processing || isSubmitting}>
+                                {processing || isSubmitting ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Creating...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Check className="mr-2 h-4 w-4" />
+                                        Create GRN
+                                    </>
+                                )}
+                            </Button>
+                        </div>
+                    </div>
+
+                    {/* Scrollable Content */}
+                    <div className="flex-1 overflow-y-auto">
+                        <div className="p-6 space-y-6">
+                            {/* PO Info and GRN Details */}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                {/* PO Info Card */}
+                                <div className="rounded-xl border bg-card p-5 space-y-4">
+                                    <div className="flex items-center gap-2 text-sm font-medium">
+                                        <Building2 className="h-4 w-4 text-muted-foreground" />
+                                        PURCHASE ORDER INFO
+                                    </div>
+                                    <div className="rounded-lg bg-muted/50 p-3 space-y-2 text-sm">
+                                        <div className="flex justify-between">
+                                            <span className="text-muted-foreground">PO Number:</span>
+                                            <span className="font-medium">{purchaseOrder.po_number}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-muted-foreground">Supplier:</span>
+                                            <span className="font-medium">{purchaseOrder.supplier?.name}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-muted-foreground">Order Date:</span>
+                                            <span>{new Date(purchaseOrder.order_date).toLocaleDateString()}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-muted-foreground">Total Amount:</span>
+                                            <span className="font-bold">${parseFloat(purchaseOrder.total_amount).toFixed(2)}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* GRN Details Card */}
+                                <div className="rounded-xl border bg-card p-5 space-y-4">
+                                    <div className="flex items-center gap-2 text-sm font-medium">
+                                        <FileText className="h-4 w-4 text-muted-foreground" />
+                                        GRN DETAILS
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label className="text-xs text-muted-foreground">Receive to store</Label>
+                                            <Select value={selectedStore} onValueChange={setSelectedStore}>
+                                                <SelectTrigger className="bg-muted/50 border-0 w-full">
+                                                    <SelectValue placeholder="Select store" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {stores.map(store => (
+                                                        <SelectItem key={store.id} value={store.id.toString()}>
+                                                            {store.name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            <InputError message={errors.store_id} />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-xs text-muted-foreground">Received date</Label>
+                                            <Input
+                                                type="date"
+                                                value={receivedDate}
+                                                onChange={(e) => setReceivedDate(e.target.value)}
+                                                className="bg-muted/50 border-0"
+                                            />
+                                            <InputError message={errors.received_date} />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-xs text-muted-foreground">Supplier invoice no.</Label>
+                                            <Input
+                                                type="text"
+                                                value={supplierInvoiceNo}
+                                                onChange={(e) => setSupplierInvoiceNo(e.target.value)}
+                                                placeholder="INV-001"
+                                                className="bg-muted/50 border-0"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-xs text-muted-foreground">Supplier invoice date</Label>
+                                            <Input
+                                                type="date"
+                                                value={supplierInvoiceDate}
+                                                onChange={(e) => setSupplierInvoiceDate(e.target.value)}
+                                                className="bg-muted/50 border-0"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Items Section */}
+                            <div className="rounded-xl border bg-card p-5 space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2 text-sm font-medium">
+                                        <Package className="h-4 w-4 text-muted-foreground" />
+                                        Receive Items
+                                        <span className="text-muted-foreground font-normal">
+                                            {items.length} items · {totals.totalAccepted} units to receive
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div className="rounded-lg border overflow-hidden">
+                                    <table className="w-full text-sm">
+                                        <thead className="bg-muted/50">
+                                            <tr className="text-muted-foreground">
+                                                <th className="px-4 py-3 text-left font-medium">Product / Variant</th>
+                                                <th className="px-4 py-3 text-center font-medium w-20">Ordered</th>
+                                                <th className="px-4 py-3 text-center font-medium w-20">Pending</th>
+                                                <th className="px-4 py-3 text-center font-medium w-24">Received</th>
+                                                <th className="px-4 py-3 text-center font-medium w-24">Accepted</th>
+                                                <th className="px-4 py-3 text-center font-medium w-24">Rejected</th>
+                                                <th className="px-4 py-3 text-center font-medium w-28">Unit Cost</th>
+                                                <th className="px-4 py-3 text-right font-medium w-28">Total Cost</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-border">
+                                            {items.map((item, idx) => (
+                                                <tr key={idx} className="bg-card">
+                                                    <td className="px-4 py-3">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="flex h-10 w-10 items-center justify-center rounded-md bg-muted">
+                                                                <Package className="h-5 w-5 text-muted-foreground" />
+                                                            </div>
+                                                            <div>
+                                                                <div className="font-medium">{item.variant_name}</div>
+                                                                <div className="text-xs text-muted-foreground">{item.sku}</div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-4 py-3 text-center text-muted-foreground">
+                                                        {item.ordered_qty}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-center text-muted-foreground">
+                                                        {item.pending_qty}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-center">
+                                                        <Input
+                                                            type="number"
+                                                            value={item.received_qty}
+                                                            onChange={(e) => updateItem(idx, 'received_qty', parseInt(e.target.value) || 0)}
+                                                            className="h-8 w-20 text-center bg-muted/50 border-0 mx-auto"
+                                                            min="0"
+                                                            max={item.pending_qty}
+                                                        />
+                                                    </td>
+                                                    <td className="px-4 py-3 text-center">
+                                                        <Input
+                                                            type="number"
+                                                            value={item.accepted_qty}
+                                                            onChange={(e) => updateItem(idx, 'accepted_qty', parseInt(e.target.value) || 0)}
+                                                            className="h-8 w-20 text-center bg-muted/50 border-0 mx-auto"
+                                                            min="0"
+                                                            max={item.received_qty}
+                                                        />
+                                                    </td>
+                                                    <td className="px-4 py-3 text-center">
+                                                        <Input
+                                                            type="number"
+                                                            value={item.rejected_qty}
+                                                            onChange={(e) => updateItem(idx, 'rejected_qty', parseInt(e.target.value) || 0)}
+                                                            className="h-8 w-20 text-center bg-muted/50 border-0 mx-auto"
+                                                            min="0"
+                                                        />
+                                                    </td>
+                                                    <td className="px-4 py-3 text-center text-muted-foreground">
+                                                        ${parseFloat(item.unit_purchase_cost_price).toFixed(2)}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-right font-medium">
+                                                        ${parseFloat(item.total_cost_price).toFixed(2)}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            {/* Notes and Totals */}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                {/* Notes */}
+                                <div className="space-y-2">
+                                    <Label className="text-xs text-muted-foreground">Internal notes</Label>
+                                    <Textarea
+                                        value={notes}
+                                        onChange={(e) => setNotes(e.target.value)}
+                                        placeholder="Add notes for this goods receipt..."
+                                        rows={4}
+                                        className="bg-muted/50 border-0 resize-none"
+                                    />
+                                </div>
+
+                                {/* Costs & Totals */}
+                                <div className="rounded-xl border bg-card p-5 space-y-4">
+                                    <div className="flex items-center gap-2 text-sm font-medium">
+                                        <Calculator className="h-4 w-4 text-muted-foreground" />
+                                        COST DISTRIBUTION
+                                    </div>
+                                    <div className="space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-muted-foreground">Distribution Mode</span>
+                                            <Select value={costDistributionMode} onValueChange={(v) => setCostDistributionMode(v as CostDistributionMode)}>
+                                                <SelectTrigger className="w-40 bg-muted/50 border-0">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="UNIT_WISE">Unit Wise</SelectItem>
+                                                    <SelectItem value="ITEM_WISE">Item Wise</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-muted-foreground">Shipping Cost</span>
+                                            <Input
+                                                type="number"
+                                                value={shippingCost}
+                                                onChange={(e) => setShippingCost(e.target.value)}
+                                                className="h-8 w-28 text-right bg-muted/50 border-0"
+                                                min="0"
+                                                step="0.01"
+                                            />
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-muted-foreground">Custom Duty</span>
+                                            <Input
+                                                type="number"
+                                                value={customDuty}
+                                                onChange={(e) => setCustomDuty(e.target.value)}
+                                                className="h-8 w-28 text-right bg-muted/50 border-0"
+                                                min="0"
+                                                step="0.01"
+                                            />
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-muted-foreground">Other Cost</span>
+                                            <Input
+                                                type="number"
+                                                value={otherCost}
+                                                onChange={(e) => setOtherCost(e.target.value)}
+                                                className="h-8 w-28 text-right bg-muted/50 border-0"
+                                                min="0"
+                                                step="0.01"
+                                            />
+                                        </div>
+                                        <div className="border-t pt-3 flex items-center justify-between">
+                                            <span className="font-semibold">Total Cost</span>
+                                            <span className="text-xl font-bold">${totals.itemsTotal.toFixed(2)}</span>
+                                        </div>
+                                        <div className="text-xs text-muted-foreground">
+                                            {totals.totalAccepted} units accepted, {totals.totalRejected} rejected
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </>
+            )}
+        </Form>
+    );
+}

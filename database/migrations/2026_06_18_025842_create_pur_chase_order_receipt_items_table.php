@@ -32,7 +32,11 @@ return new class extends Migration
             $table->integer('accepted_qty')->default(0);
             $table->integer('rejected_qty')->default(0);
             $table->string('rejection_reason')->nullable();
-            $table->decimal('unit_cost', 15, 2);
+            $table->decimal('unit_purchase_cost_price', 15, 2)->default(0);
+            $table->decimal('unit_shipping_cost', 15, 2)->default(0);
+            $table->decimal('unit_custom_duty', 15, 2)->default(0);
+            $table->decimal('unit_other_cost', 15, 2)->default(0);
+            $table->decimal('total_cost_price', 15, 2)->default(0);
 
             $table->string('batch_number')->nullable();
             $table->date('expiry_date')->nullable();

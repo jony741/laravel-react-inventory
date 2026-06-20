@@ -25,7 +25,7 @@ class PurchaseOrderController extends Controller
             'stores' => Store::where('is_active', true)->get(['id', 'name']),
             'variants' => ProductVariant::with('product')
                 ->where('is_active', true)
-                ->get(['id', 'product_id', 'sku', 'barcode', 'color', 'size', 'cost', 'price']),
+                ->get(['id', 'product_id', 'sku', 'barcode', 'color', 'size', 'price']),
         ]);
     }
 
@@ -121,7 +121,7 @@ class PurchaseOrderController extends Controller
         $totalTax = 0;
 
         foreach ($purchaseOrder->items as $item) {
-            $itemSubtotal = $item->qty * $item->cost;
+            $itemSubtotal = $item->qty * $item->purchase_price;
 
             if ($item->discount) {
                 if ($item->discount_percentage) {

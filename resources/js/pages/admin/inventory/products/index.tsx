@@ -54,7 +54,6 @@ type VariantFormData = {
     barcode: string;
     color: string;
     size: string;
-    cost: string;
     price: string;
     reorder_level: number;
     is_active: boolean;
@@ -65,7 +64,6 @@ const emptyVariant: VariantFormData = {
     barcode: '',
     color: '',
     size: '',
-    cost: '',
     price: '',
     reorder_level: 0,
     is_active: true,
@@ -159,7 +157,6 @@ export default function ProductsIndex({ products, categories, brands }: Props) {
                 barcode: v.barcode || '',
                 color: v.color || '',
                 size: v.size || '',
-                cost: v.cost,
                 price: v.price,
                 reorder_level: v.reorder_level,
                 is_active: v.is_active,
@@ -669,7 +666,6 @@ export default function ProductsIndex({ products, categories, brands }: Props) {
                                                     <th className="px-4 py-3 text-left font-medium">SKU</th>
                                                     <th className="px-4 py-3 text-left font-medium">Color</th>
                                                     <th className="px-4 py-3 text-left font-medium">Size</th>
-                                                    <th className="px-4 py-3 text-left font-medium">Cost</th>
                                                     <th className="px-4 py-3 text-left font-medium">Price</th>
                                                     <th className="px-4 py-3 text-left font-medium">Status</th>
                                                     <th className="px-4 py-3 w-10"></th>
@@ -712,21 +708,6 @@ export default function ProductsIndex({ products, categories, brands }: Props) {
                                                                     placeholder="Size"
                                                                     className="h-8 bg-transparent border-0 p-0 focus-visible:ring-0"
                                                                 />
-                                                            </td>
-                                                            <td className="px-4 py-3">
-                                                                <div className="flex items-center">
-                                                                    <span className="text-muted-foreground mr-1">৳</span>
-                                                                    <Input
-                                                                        type="number"
-                                                                        value={variant.cost}
-                                                                        onChange={(e) => updateVariant(idx, 'cost', e.target.value)}
-                                                                        placeholder="0"
-                                                                        className="h-8 w-20 bg-transparent border-0 p-0 focus-visible:ring-0"
-                                                                        min="0"
-                                                                        step="0.01"
-                                                                        required
-                                                                    />
-                                                                </div>
                                                             </td>
                                                             <td className="px-4 py-3">
                                                                 <div className="flex items-center font-medium">
@@ -960,7 +941,6 @@ export default function ProductsIndex({ products, categories, brands }: Props) {
                                             <th className="px-4 py-3 text-left font-medium">Barcode</th>
                                             <th className="px-4 py-3 text-left font-medium">Color</th>
                                             <th className="px-4 py-3 text-left font-medium">Size</th>
-                                            <th className="px-4 py-3 text-left font-medium">Cost</th>
                                             <th className="px-4 py-3 text-left font-medium">Price</th>
                                             <th className="px-4 py-3 text-left font-medium">Status</th>
                                         </tr>
@@ -990,9 +970,6 @@ export default function ProductsIndex({ products, categories, brands }: Props) {
                                                     <td className="px-4 py-3">
                                                         {variant.size || '-'}
                                                     </td>
-                                                    <td className="px-4 py-3 text-muted-foreground">
-                                                        ৳{variant.cost}
-                                                    </td>
                                                     <td className="px-4 py-3 font-medium">
                                                         ৳{variant.price}
                                                     </td>
@@ -1010,7 +987,7 @@ export default function ProductsIndex({ products, categories, brands }: Props) {
                                             ))}
                                             {(!previewProduct?.variants || previewProduct.variants.length === 0) && (
                                                 <tr>
-                                                    <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
+                                                    <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
                                                         No variants found.
                                                     </td>
                                                 </tr>

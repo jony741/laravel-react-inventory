@@ -18,7 +18,6 @@ use Illuminate\Support\Carbon;
  * @property string|null $barcode
  * @property string|null $color
  * @property string|null $size
- * @property string $cost
  * @property string $price
  * @property int $reorder_level
  * @property bool $is_active
@@ -26,7 +25,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
  */
-#[Fillable(['product_id', 'sku', 'barcode', 'color', 'size', 'cost', 'price', 'reorder_level', 'is_active'])]
+#[Fillable(['product_id', 'sku', 'barcode', 'color', 'size', 'price', 'reorder_level', 'is_active'])]
 class ProductVariant extends Model
 {
     /** @use HasFactory<ProductVariantFactory> */
@@ -35,7 +34,6 @@ class ProductVariant extends Model
     protected function casts(): array
     {
         return [
-            'cost' => 'decimal:2',
             'price' => 'decimal:2',
             'reorder_level' => 'integer',
             'is_active' => 'boolean',

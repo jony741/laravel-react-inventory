@@ -62,7 +62,6 @@ export type ProductVariant = {
     barcode: string | null;
     color: string | null;
     size: string | null;
-    cost: string;
     price: string;
     reorder_level: number;
     is_active: boolean;
@@ -76,7 +75,7 @@ export type PurchaseOrderItem = {
     purchase_order_id: number;
     variant_id: number;
     qty: number;
-    cost: string;
+    purchase_price: string;
     subtotal: string;
     discount_percentage: boolean;
     discount: string | null;
@@ -96,6 +95,8 @@ export type PurchaseOrder = {
     expected_date: string | null;
     received_date: string | null;
     shipping_cost: string;
+    custom_duty: string;
+    other_cost: string;
     payment_status: string;
     approved_by: number | null;
     discount_type: string;

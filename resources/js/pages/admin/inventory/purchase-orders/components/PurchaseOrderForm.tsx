@@ -46,6 +46,8 @@ export function PurchaseOrderForm({
     const [supplierInvoiceNumber, setSupplierInvoiceNumber] = useState<string>('');
     const [supplierInvoiceDate, setSupplierInvoiceDate] = useState<string>('');
     const [shippingCost, setShippingCost] = useState<string>('0');
+    const [customDuty, setCustomDuty] = useState<string>('0');
+    const [otherCost, setOtherCost] = useState<string>('0');
     const [discountType, setDiscountType] = useState<'FIXED' | 'PERCENTAGE'>('FIXED');
     const [discount, setDiscount] = useState<string>('0');
     const [tax, setTax] = useState<string>('0');
@@ -74,6 +76,8 @@ export function PurchaseOrderForm({
                 setSupplierInvoiceNumber(order.supplier_invoice_number || '');
                 setSupplierInvoiceDate(order.supplier_invoice_date ? order.supplier_invoice_date.split('T')[0] : '');
                 setShippingCost(order.shipping_cost || '0');
+                setCustomDuty(order.custom_duty || '0');
+                setOtherCost(order.other_cost || '0');
                 setDiscountType((order.discount_type as 'FIXED' | 'PERCENTAGE') || 'FIXED');
                 setDiscount(order.discount || '0');
                 setTax(order.tax || '0');
@@ -88,7 +92,7 @@ export function PurchaseOrderForm({
                         id: item.id,
                         variant_id: item.variant_id,
                         qty: item.qty,
-                        cost: item.cost,
+                        purchase_price: item.purchase_price,
                         subtotal: item.subtotal,
                         discount_percentage: item.discount_percentage,
                         discount: item.discount || '',
@@ -108,6 +112,8 @@ export function PurchaseOrderForm({
                 setSupplierInvoiceNumber('');
                 setSupplierInvoiceDate('');
                 setShippingCost('0');
+                setCustomDuty('0');
+                setOtherCost('0');
                 setDiscountType('FIXED');
                 setDiscount('0');
                 setTax('0');
@@ -144,14 +150,14 @@ export function PurchaseOrderForm({
         if (existingIndex >= 0) {
             const updated = [...orderItems];
             updated[existingIndex].qty += 1;
-            updated[existingIndex].subtotal = (updated[existingIndex].qty * parseFloat(updated[existingIndex].cost)).toFixed(2);
+            updated[existingIndex].subtotal = (updated[existingIndex].qty * parseFloat(updated[existingIndex].purchase_price)).toFixed(2);
             setOrderItems(updated);
         } else {
             setOrderItems([...orderItems, {
                 ...emptyOrderItem,
                 variant_id: variant.id,
-                cost: variant.cost,
-                subtotal: variant.cost
+                purchase_price: variant.price,
+                subtotal: variant.price
             }]);
         }
 
@@ -166,10 +172,10 @@ export function PurchaseOrderForm({
         const updated = [...orderItems];
         updated[index] = { ...updated[index], [field]: value };
 
-        if (field === 'qty' || field === 'cost' || field === 'discount' || field === 'discount_percentage') {
+        if (field === 'qty' || field === 'purchase_price' || field === 'discount' || field === 'discount_percentage') {
             const qty = field === 'qty' ? Number(value) : updated[index].qty;
-            const cost = field === 'cost' ? parseFloat(value as string) || 0 : parseFloat(updated[index].cost) || 0;
-            let subtotal = qty * cost;
+            const purchasePrice = field === 'purchase_price' ? parseFloat(value as string) || 0 : parseFloat(updated[index].purchase_price) || 0;
+            let subtotal = qty * purchasePrice;
 
             const discountValue = field === 'discount' ? parseFloat(value as string) || 0 : parseFloat(updated[index].discount) || 0;
             const isPercentage = field === 'discount_percentage' ? value as boolean : updated[index].discount_percentage;
@@ -213,12 +219,14 @@ export function PurchaseOrderForm({
         const totalTax = parseFloat(tax) || 0;
         const discountValue = parseFloat(discount) || 0;
         const totalShipping = parseFloat(shippingCost) || 0;
+        const totalCustomDuty = parseFloat(customDuty) || 0;
+        const totalOtherCost = parseFloat(otherCost) || 0;
 
         const totalDiscount = discountType === 'PERCENTAGE'
             ? (itemsSubtotal * discountValue / 100)
             : discountValue;
 
-        const total = itemsSubtotal + totalTax - totalDiscount + totalShipping;
+        const total = itemsSubtotal + totalTax - totalDiscount + totalShipping + totalCustomDuty + totalOtherCost;
 
         return {
             subtotal: itemsSubtotal,
@@ -226,6 +234,8 @@ export function PurchaseOrderForm({
             discountValue,
             discount: totalDiscount,
             shipping: totalShipping,
+            customDuty: totalCustomDuty,
+            otherCost: totalOtherCost,
             total,
             itemCount: orderItems.reduce((sum, item) => sum + item.qty, 0)
         };
@@ -298,6 +308,8 @@ export function PurchaseOrderForm({
                             supplier_invoice_number: supplierInvoiceNumber,
                             supplier_invoice_date: supplierInvoiceDate || null,
                             shipping_cost: shippingCost,
+                            custom_duty: customDuty,
+                            other_cost: otherCost,
                             discount_type: discountType,
                             discount,
                             tax,
@@ -387,11 +399,18 @@ export function PurchaseOrderForm({
                                             </Button>
                                         )}
 
-                                        {/* GRN Button - For APPROVED orders */}
-                                        {currentOrderStatus === 'APPROVED' && (
-                                            <Button type="button" size="sm" variant="default" disabled>
+                                        {/* GRN Button - For APPROVED or PARTIALLY_RECEIVED orders */}
+                                        {(currentOrderStatus === 'APPROVED' || currentOrderStatus === 'PARTIALLY_RECEIVED') && currentOrderId && (
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                variant="default"
+                                                onClick={() => {
+                                                    router.visit(`/admin/inventory/goods-receipts/create/${currentOrderId}`);
+                                                }}
+                                            >
                                                 <Receipt className="mr-2 h-4 w-4" />
-                                                GRN
+                                                Create GRN
                                             </Button>
                                         )}
                                     </div>
@@ -547,8 +566,8 @@ export function PurchaseOrderForm({
                                                             Variant
                                                         </th>
                                                         <th className="px-4 py-3 text-center font-medium w-24">Qty</th>
-                                                        <th className="px-4 py-3 text-center font-medium w-28">Unit
-                                                            cost
+                                                        <th className="px-4 py-3 text-center font-medium w-28">Purchase
+                                                            Price
                                                         </th>
                                                         <th className="px-4 py-3 text-center font-medium w-28">Discount
                                                             %
@@ -589,8 +608,8 @@ export function PurchaseOrderForm({
                                                             <td className="px-4 py-3 text-center">
                                                                 <Input
                                                                     type="number"
-                                                                    value={item.cost}
-                                                                    onChange={(e) => updateOrderItem(idx, 'cost', e.target.value)}
+                                                                    value={item.purchase_price}
+                                                                    onChange={(e) => updateOrderItem(idx, 'purchase_price', e.target.value)}
                                                                     className="h-8 w-24 text-center bg-muted/50 border-0 mx-auto"
                                                                     min="0"
                                                                     step="0.01"
@@ -666,7 +685,7 @@ export function PurchaseOrderForm({
                                                                         </div>
                                                                     </div>
                                                                     <span
-                                                                        className="text-sm font-medium">${variant.cost}</span>
+                                                                        className="text-sm font-medium">${variant.price}</span>
                                                                 </button>
                                                             ))}
                                                             {filteredVariants.length === 0 && (
@@ -754,6 +773,30 @@ export function PurchaseOrderForm({
                                                             type="number"
                                                             value={shippingCost}
                                                             onChange={(e) => setShippingCost(e.target.value)}
+                                                            className="h-8 w-28 text-right bg-muted/50 border-0"
+                                                            min="0"
+                                                            step="0.01"
+                                                        />
+                                                    </div>
+                                                    <div className="flex items-center justify-between">
+                                                        <span
+                                                            className="text-muted-foreground flex items-center gap-1">Custom Duty</span>
+                                                        <Input
+                                                            type="number"
+                                                            value={customDuty}
+                                                            onChange={(e) => setCustomDuty(e.target.value)}
+                                                            className="h-8 w-28 text-right bg-muted/50 border-0"
+                                                            min="0"
+                                                            step="0.01"
+                                                        />
+                                                    </div>
+                                                    <div className="flex items-center justify-between">
+                                                        <span
+                                                            className="text-muted-foreground flex items-center gap-1">Other Cost</span>
+                                                        <Input
+                                                            type="number"
+                                                            value={otherCost}
+                                                            onChange={(e) => setOtherCost(e.target.value)}
                                                             className="h-8 w-28 text-right bg-muted/50 border-0"
                                                             min="0"
                                                             step="0.01"

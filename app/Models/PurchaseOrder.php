@@ -21,6 +21,8 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $received_date
  * @property string $status
  * @property string $shipping_cost
+ * @property string $custom_duty
+ * @property string $other_cost
  * @property string $payment_status
  * @property int|null $approved_by
  * @property string $discount_type
@@ -38,7 +40,7 @@ use Illuminate\Support\Carbon;
  */
 #[Fillable([
     'po_number', 'supplier_id', 'store_id', 'order_date', 'expected_date', 'received_date',
-    'shipping_cost', 'payment_status', 'approved_by', 'discount_type', 'supplier_invoice_number',
+    'shipping_cost', 'custom_duty', 'other_cost', 'payment_status', 'approved_by', 'discount_type', 'supplier_invoice_number',
     'supplier_invoice_date', 'status', 'subtotal', 'tax', 'discount', 'total_amount', 'notes', 'created_by'
 ])]
 class PurchaseOrder extends Model
@@ -54,6 +56,8 @@ class PurchaseOrder extends Model
             'received_date' => 'date',
             'supplier_invoice_date' => 'date',
             'shipping_cost' => 'decimal:2',
+            'custom_duty' => 'decimal:2',
+            'other_cost' => 'decimal:2',
             'subtotal' => 'decimal:2',
             'tax' => 'decimal:2',
             'discount' => 'decimal:2',

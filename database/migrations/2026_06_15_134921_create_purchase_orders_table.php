@@ -14,7 +14,9 @@ return new class extends Migration
             $table->foreignId('supplier_id')->constrained('suppliers')->restrictOnDelete();
             $table->foreignId('store_id')->constrained('stores')->restrictOnDelete();
             $table->date('order_date');
-            $table->decimal('shipping_cost', 12, 2)->default(0);
+            $table->decimal('shipping_cost', 15, 2)->default(0);
+            $table->decimal('custom_duty', 15, 2)->default(0);
+            $table->decimal('other_cost', 15, 2)->default(0);
             $table->string('payment_status')->default('UNPAID'); // UNPAID, PARTIAL, PAID
             $table->foreignId('approved_by')->nullable()->constrained('users')->nullOnDelete();
             $table->string('discount_type')->default('FIXED'); // FIXED or PERCENT

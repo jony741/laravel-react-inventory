@@ -13,7 +13,7 @@ return new class extends Migration
             $table->foreignId('purchase_order_id')->constrained('purchase_orders')->cascadeOnDelete();
             $table->foreignId('variant_id')->constrained('product_variants')->restrictOnDelete();
             $table->integer('qty');
-            $table->decimal('cost', 12, 2);
+            $table->decimal('purchase_price', 12, 2);
             $table->decimal('subtotal', 14, 2);
             $table->boolean('discount_percentage')->default(false);
             $table->string('discount')->nullable();

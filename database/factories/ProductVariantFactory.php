@@ -23,7 +23,6 @@ class ProductVariantFactory extends Factory
             'barcode' => fake()->unique()->ean13(),
             'color' => fake()->safeColorName(),
             'size' => fake()->randomElement(['S', 'M', 'L', 'XL', '42', '44']),
-            'cost' => fake()->randomFloat(2, 5, 100),
             'price' => fake()->randomFloat(2, 10, 200),
             'reorder_level' => fake()->numberBetween(5, 50),
             'is_active' => true,
