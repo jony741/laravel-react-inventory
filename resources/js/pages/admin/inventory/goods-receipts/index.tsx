@@ -1,5 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
-import { Search, Receipt, Eye } from 'lucide-react';
+import { Search, Receipt, Eye, Plus } from 'lucide-react';
 import { useState } from 'react';
 import Heading from '@/components/heading';
 import Pagination from '@/components/pagination';
@@ -7,6 +7,9 @@ import type { PaginationData } from '@/components/pagination';
 import TableSkeleton from '@/components/table-skeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import type { PurchaseOrder } from '@/types';
+import type { StoreOption } from './components';
+import { GoodsReceiptFormDialog } from './components';
 
 type GoodsReceipt = {
     id: number;
@@ -47,6 +50,8 @@ type GoodsReceipt = {
 
 type Props = {
     goodsReceipts?: PaginationData<GoodsReceipt>;
+    approvedPurchaseOrders: PurchaseOrder[];
+    stores: StoreOption[];
 };
 
 function StatusBadge({ status }: { status: string }) {
@@ -62,8 +67,9 @@ function StatusBadge({ status }: { status: string }) {
     );
 }
 
-export default function GoodsReceiptsIndex({ goodsReceipts }: Props) {
+export default function GoodsReceiptsIndex({ goodsReceipts, approvedPurchaseOrders, stores }: Props) {
     const [searchQuery, setSearchQuery] = useState('');
+    const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
     const getTotalCost = (receipt: GoodsReceipt) => {
         if (!receipt.items) return 0;
@@ -85,6 +91,10 @@ export default function GoodsReceiptsIndex({ goodsReceipts }: Props) {
                         title="Goods Receipts"
                         description="Track received goods from purchase orders"
                     />
+                    <Button onClick={() => setIsCreateDialogOpen(true)}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Create GRN
+                    </Button>
                 </div>
 
                 <div className="flex items-center gap-4">
@@ -180,6 +190,13 @@ export default function GoodsReceiptsIndex({ goodsReceipts }: Props) {
                     )}
                 </div>
             </div>
+
+            <GoodsReceiptFormDialog
+                open={isCreateDialogOpen}
+                onOpenChange={setIsCreateDialogOpen}
+                approvedPurchaseOrders={approvedPurchaseOrders}
+                stores={stores}
+            />
         </>
     );
 }

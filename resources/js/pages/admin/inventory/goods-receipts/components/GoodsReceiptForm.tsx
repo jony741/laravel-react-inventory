@@ -42,7 +42,7 @@ export function GoodsReceiptForm({ purchaseOrder, stores }: Props) {
     useEffect(() => {
         if (purchaseOrder.items) {
             const grnItems: GRNItemFormData[] = purchaseOrder.items.map(item => {
-                const pendingQty = item.qty - item.received_qty;
+                const pendingQty = item.qty - (item.receipt_items_sum_accepted_qty ?? 0);
                 return {
                     purchase_order_item_id: item.id,
                     product_variant_id: item.variant_id,

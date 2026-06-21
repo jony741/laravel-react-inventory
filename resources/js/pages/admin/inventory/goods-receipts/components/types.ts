@@ -43,3 +43,17 @@ export type GoodsReceiptCreateProps = {
     purchaseOrder: PurchaseOrder;
     stores: StoreOption[];
 };
+
+export type POSelectorDialogProps = {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    purchaseOrders: PurchaseOrder[];
+    onSelect: (po: PurchaseOrder) => void;
+};
+
+export type GoodsReceiptFormDialogProps = {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    approvedPurchaseOrders: PurchaseOrder[];
+    stores: StoreOption[];
+};

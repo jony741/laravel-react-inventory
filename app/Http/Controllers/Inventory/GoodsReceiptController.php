@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Inventory\GoodsReceiptRequest;
 use App\Models\PurchaseOrder;
 use App\Models\PurChaseOrderReceipt;
+use App\Models\PurChaseOrderReceiptItem;
 use App\Models\Store;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
@@ -21,12 +22,24 @@ class GoodsReceiptController extends Controller
             'goodsReceipts' => Inertia::defer(fn () => PurChaseOrderReceipt::with(['purchaseOrder.supplier', 'store', 'receiver', 'items.variant.product'])
                 ->latest()
                 ->paginate(10)),
+            'approvedPurchaseOrders' => PurchaseOrder::with([
+                'supplier',
+                'store',
+                'items' => fn ($query) => $query->with('variant.product')->withSum('receiptItems', 'accepted_qty'),
+            ])
+                ->whereIn('status', ['APPROVED', 'PARTIALLY_RECEIVED'])
+                ->get(),
+            'stores' => Store::where('is_active', true)->get(['id', 'name']),
         ]);
     }
 
     public function create(PurchaseOrder $purchaseOrder): Response
     {
-        $purchaseOrder->load(['supplier', 'store', 'items.variant.product']);
+        $purchaseOrder->load([
+            'supplier',
+            'store',
+            'items' => fn ($query) => $query->with('variant.product')->withSum('receiptItems', 'accepted_qty'),
+        ]);
 
         return Inertia::render('admin/inventory/goods-receipts/create', [
             'purchaseOrder' => $purchaseOrder,
@@ -45,12 +58,15 @@ class GoodsReceiptController extends Controller
             $receipt = PurChaseOrderReceipt::create($data);
 
             foreach ($request->validated('items') as $itemData) {
-                $receipt->items()->create($itemData);
+                $grnItem = $receipt->items()->create($itemData);
 
-                $this->updatePurchaseOrderItemReceivedQty(
-                    $itemData['purchase_order_item_id'],
-                    $itemData['accepted_qty']
-                );
+                if ($data['status'] === 'COMPLETED' && $itemData['accepted_qty'] > 0) {
+                    $this->createInventoryTransaction(
+                        $grnItem,
+                        (int) $data['store_id'],
+                        $data['received_date']
+                    );
+                }
             }
 
             $this->updatePurchaseOrderStatus($request->validated('purchase_order_id'));
@@ -78,28 +94,46 @@ class GoodsReceiptController extends Controller
         return 'GRN-'.date('Y').'-'.str_pad($nextId, 4, '0', STR_PAD_LEFT);
     }
 
-    private function updatePurchaseOrderItemReceivedQty(int $itemId, int $acceptedQty): void
-    {
-        DB::table('purchase_order_items')
-            ->where('id', $itemId)
-            ->increment('received_qty', $acceptedQty);
-    }
-
     private function updatePurchaseOrderStatus(int $purchaseOrderId): void
     {
-        $purchaseOrder = PurchaseOrder::with('items')->find($purchaseOrderId);
+        $purchaseOrder = PurchaseOrder::with([
+            'items' => fn ($query) => $query->withSum('receiptItems', 'accepted_qty'),
+        ])->find($purchaseOrderId);
 
         if (! $purchaseOrder) {
             return;
         }
 
         $totalOrdered = $purchaseOrder->items->sum('qty');
-        $totalReceived = $purchaseOrder->items->sum('received_qty');
+        $totalReceived = $purchaseOrder->items->sum('receipt_items_sum_accepted_qty') ?? 0;
 
         if ($totalReceived >= $totalOrdered) {
             $purchaseOrder->update(['status' => 'RECEIVED']);
         } elseif ($totalReceived > 0) {
             $purchaseOrder->update(['status' => 'PARTIALLY_RECEIVED']);
         }
+    }
+
+    private function createInventoryTransaction(PurChaseOrderReceiptItem $grnItem, int $storeId, string $receivedDate): void
+    {
+        DB::table('inventory_transactions')->insert([
+            'date' => $receivedDate,
+            'store_id' => $storeId,
+            'variant_id' => $grnItem->product_variant_id,
+            'transaction_type' => 'GRN',
+            'reference_type' => PurChaseOrderReceiptItem::class,
+            'reference_id' => $grnItem->id,
+            'qty_in' => $grnItem->accepted_qty,
+            'qty_out' => 0,
+            'unit_purchase_cost_price' => $grnItem->unit_purchase_cost_price,
+            'unit_shipping_cost' => $grnItem->unit_shipping_cost,
+            'unit_custom_duty' => $grnItem->unit_custom_duty,
+            'unit_other_cost' => $grnItem->unit_other_cost,
+            'total_cost_price' => $grnItem->total_cost_price,
+            'notes' => $grnItem->notes,
+            'created_by' => Auth::id(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
     }
 }

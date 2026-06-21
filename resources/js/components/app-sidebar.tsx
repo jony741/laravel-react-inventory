@@ -1,4 +1,4 @@
-import { LayoutGrid, Settings, Tag, FolderTree, Store, Users, Building2, Package, ShoppingCart } from 'lucide-react';
+import { LayoutGrid, Settings, Tag, FolderTree, Store, Users, Building2, Package, ShoppingCart, Receipt } from 'lucide-react';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import {
@@ -14,6 +14,7 @@ import { index as indexCustomers } from '@/routes/customers';
 import { index as indexSuppliers } from '@/routes/suppliers';
 import { index as indexProducts } from '@/routes/products';
 import { index as indexPurchaseOrders } from '@/routes/purchase-orders';
+import { index as indexGoodsReceipts } from '@/routes/goods-receipts';
 import type { NavItem } from '@/types';
 
 const mainNavItems: NavItem[] = [
@@ -34,6 +35,11 @@ const inventoryNavItems: NavItem[] = [
         title: 'Purchase Orders',
         href: indexPurchaseOrders(),
         icon: ShoppingCart,
+    },
+    {
+        title: 'Goods Receipts',
+        href: indexGoodsReceipts(),
+        icon: Receipt,
     },
 ];
 
