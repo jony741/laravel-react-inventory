@@ -72,12 +72,18 @@ export default function GoodsReceiptsIndex({ goodsReceipts, approvedPurchaseOrde
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
     const getTotalCost = (receipt: GoodsReceipt) => {
-        if (!receipt.items) return 0;
+        if (!receipt.items) {
+            return 0;
+        }
+
         return receipt.items.reduce((sum, item) => sum + parseFloat(item.total_cost_price || '0'), 0);
     };
 
     const getTotalUnits = (receipt: GoodsReceipt) => {
-        if (!receipt.items) return 0;
+        if (!receipt.items) {
+            return 0;
+        }
+
         return receipt.items.reduce((sum, item) => sum + item.accepted_qty, 0);
     };
 

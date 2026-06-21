@@ -41,7 +41,7 @@ use Illuminate\Support\Carbon;
 #[Fillable([
     'po_number', 'supplier_id', 'store_id', 'order_date', 'expected_date', 'received_date',
     'shipping_cost', 'custom_duty', 'other_cost', 'payment_status', 'approved_by', 'discount_type', 'supplier_invoice_number',
-    'supplier_invoice_date', 'status', 'subtotal', 'tax', 'discount', 'total_amount', 'notes', 'created_by'
+    'supplier_invoice_date', 'status', 'subtotal', 'tax', 'discount', 'total_amount', 'notes', 'created_by',
 ])]
 class PurchaseOrder extends Model
 {

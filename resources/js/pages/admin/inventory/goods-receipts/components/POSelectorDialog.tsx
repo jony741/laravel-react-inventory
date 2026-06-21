@@ -1,5 +1,6 @@
 import { Search, ShoppingCart, Building2, Calendar, DollarSign } from 'lucide-react';
 import { useState, useMemo } from 'react';
+import { Button } from '@/components/ui/button';
 import {
     Dialog,
     DialogContent,
@@ -7,8 +8,8 @@ import {
     DialogTitle,
     DialogDescription,
 } from '@/components/ui/dialog';
+
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import type { PurchaseOrder } from '@/types';
 import type { POSelectorDialogProps } from './types';
 
@@ -29,9 +30,12 @@ export function POSelectorDialog({ open, onOpenChange, purchaseOrders, onSelect 
     const [searchQuery, setSearchQuery] = useState('');
 
     const filteredPOs = useMemo(() => {
-        if (!searchQuery.trim()) return purchaseOrders;
+        if (!searchQuery.trim()) {
+            return purchaseOrders;
+        }
 
         const query = searchQuery.toLowerCase();
+
         return purchaseOrders.filter(po =>
             po.po_number.toLowerCase().includes(query) ||
             po.supplier?.name.toLowerCase().includes(query)

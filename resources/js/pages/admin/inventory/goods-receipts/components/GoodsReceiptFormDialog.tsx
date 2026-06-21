@@ -2,18 +2,20 @@ import { Form } from '@inertiajs/react';
 import {
     Package, Check, FileText, Building2, Receipt, Loader2, Calculator, ArrowLeft
 } from 'lucide-react';
+
 import { useState, useMemo, useEffect } from 'react';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
     Dialog,
     DialogContent,
     DialogHeader,
     DialogTitle,
-    DialogDescription,
+    DialogDescription
 } from '@/components/ui/dialog';
+
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
     Select,
     SelectContent,
@@ -21,13 +23,20 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/components/ui/select';
+
 import { Textarea } from '@/components/ui/textarea';
 import { store as storeGoodsReceipt } from '@/routes/goods-receipts';
 import type { PurchaseOrder } from '@/types';
 import { POSelectorDialog } from './POSelectorDialog';
+
 import type { GRNItemFormData, CostDistributionMode, GoodsReceiptFormDialogProps } from './types';
 
-export function GoodsReceiptFormDialog({ open, onOpenChange, approvedPurchaseOrders, stores }: GoodsReceiptFormDialogProps) {
+export function GoodsReceiptFormDialog({
+                                           open,
+                                           onOpenChange,
+                                           approvedPurchaseOrders,
+                                           stores
+                                       }: GoodsReceiptFormDialogProps) {
     const [step, setStep] = useState<'select' | 'form'>('select');
     const [selectedPO, setSelectedPO] = useState<PurchaseOrder | null>(null);
 
@@ -45,6 +54,7 @@ export function GoodsReceiptFormDialog({ open, onOpenChange, approvedPurchaseOrd
 
     useEffect(() => {
         if (!open) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setStep('select');
             setSelectedPO(null);
             setItems([]);
@@ -53,6 +63,7 @@ export function GoodsReceiptFormDialog({ open, onOpenChange, approvedPurchaseOrd
 
     useEffect(() => {
         if (selectedPO) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setSelectedStore(selectedPO.store_id.toString());
             setSupplierInvoiceNo(selectedPO.supplier_invoice_number || '');
             setSupplierInvoiceDate(
@@ -65,6 +76,7 @@ export function GoodsReceiptFormDialog({ open, onOpenChange, approvedPurchaseOrd
             if (selectedPO.items) {
                 const grnItems: GRNItemFormData[] = selectedPO.items.map(item => {
                     const pendingQty = item.qty - (item.receipt_items_sum_accepted_qty ?? 0);
+
                     return {
                         purchase_order_item_id: item.id,
                         product_variant_id: item.variant_id,
@@ -93,6 +105,7 @@ export function GoodsReceiptFormDialog({ open, onOpenChange, approvedPurchaseOrd
     }, [selectedPO]);
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/immutability
         distributeCosts();
     }, [shippingCost, customDuty, otherCost, costDistributionMode, items.map(i => i.accepted_qty).join(',')]);
 
@@ -101,7 +114,9 @@ export function GoodsReceiptFormDialog({ open, onOpenChange, approvedPurchaseOrd
         const totalCustomDuty = parseFloat(customDuty) || 0;
         const totalOtherCost = parseFloat(otherCost) || 0;
 
-        if (items.length === 0) return;
+        if (items.length === 0) {
+            return;
+        }
 
         const updated = [...items];
 
@@ -206,11 +221,13 @@ export function GoodsReceiptFormDialog({ open, onOpenChange, approvedPurchaseOrd
         );
     }
 
-    if (!selectedPO) return null;
+    if (!selectedPO) {
+        return null;
+    }
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-5xl max-h-[90vh] flex flex-col p-0">
+            <DialogContent className="sm:max-w-[80%] w-[80%] max-w-[80%] max-h-[90vh] flex flex-col p-0">
                 <Form
                     className="flex flex-col h-full max-h-[90vh]"
                     {...storeGoodsReceipt.form()}
@@ -251,7 +268,7 @@ export function GoodsReceiptFormDialog({ open, onOpenChange, approvedPurchaseOrd
                 >
                     {({ errors, processing }) => (
                         <>
-                            <DialogHeader className="px-6 pt-6 pb-4 border-b shrink-0">
+                            <DialogHeader className="px-10 pt-4 pb-4 border-b shrink-0">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-3">
                                         <Button type="button" variant="ghost" size="icon" onClick={handleBack}>
@@ -305,7 +322,8 @@ export function GoodsReceiptFormDialog({ open, onOpenChange, approvedPurchaseOrd
                                             </div>
                                             <div className="flex justify-between">
                                                 <span className="text-muted-foreground">Total Amount:</span>
-                                                <span className="font-bold">${parseFloat(selectedPO.total_amount).toFixed(2)}</span>
+                                                <span
+                                                    className="font-bold">${parseFloat(selectedPO.total_amount).toFixed(2)}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -317,7 +335,8 @@ export function GoodsReceiptFormDialog({ open, onOpenChange, approvedPurchaseOrd
                                         </div>
                                         <div className="grid grid-cols-2 gap-4">
                                             <div className="space-y-2">
-                                                <Label className="text-xs text-muted-foreground">Receive to store</Label>
+                                                <Label className="text-xs text-muted-foreground">Receive to
+                                                    store</Label>
                                                 <Select value={selectedStore} onValueChange={setSelectedStore}>
                                                     <SelectTrigger className="bg-muted/50 border-0 w-full">
                                                         <SelectValue placeholder="Select store" />
@@ -343,7 +362,8 @@ export function GoodsReceiptFormDialog({ open, onOpenChange, approvedPurchaseOrd
                                                 <InputError message={errors.received_date} />
                                             </div>
                                             <div className="space-y-2">
-                                                <Label className="text-xs text-muted-foreground">Supplier invoice no.</Label>
+                                                <Label className="text-xs text-muted-foreground">Supplier invoice
+                                                    no.</Label>
                                                 <Input
                                                     type="text"
                                                     value={supplierInvoiceNo}
@@ -353,7 +373,8 @@ export function GoodsReceiptFormDialog({ open, onOpenChange, approvedPurchaseOrd
                                                 />
                                             </div>
                                             <div className="space-y-2">
-                                                <Label className="text-xs text-muted-foreground">Supplier invoice date</Label>
+                                                <Label className="text-xs text-muted-foreground">Supplier invoice
+                                                    date</Label>
                                                 <Input
                                                     type="date"
                                                     value={supplierInvoiceDate}
@@ -379,74 +400,76 @@ export function GoodsReceiptFormDialog({ open, onOpenChange, approvedPurchaseOrd
                                     <div className="rounded-lg border overflow-hidden">
                                         <table className="w-full text-sm">
                                             <thead className="bg-muted/50">
-                                                <tr className="text-muted-foreground">
-                                                    <th className="px-4 py-3 text-left font-medium">Product / Variant</th>
-                                                    <th className="px-4 py-3 text-center font-medium w-20">Ordered</th>
-                                                    <th className="px-4 py-3 text-center font-medium w-20">Pending</th>
-                                                    <th className="px-4 py-3 text-center font-medium w-24">Received</th>
-                                                    <th className="px-4 py-3 text-center font-medium w-24">Accepted</th>
-                                                    <th className="px-4 py-3 text-center font-medium w-24">Rejected</th>
-                                                    <th className="px-4 py-3 text-center font-medium w-28">Unit Cost</th>
-                                                    <th className="px-4 py-3 text-right font-medium w-28">Total Cost</th>
-                                                </tr>
+                                            <tr className="text-muted-foreground">
+                                                <th className="px-4 py-3 text-left font-medium">Product / Variant</th>
+                                                <th className="px-4 py-3 text-center font-medium w-20">Ordered</th>
+                                                <th className="px-4 py-3 text-center font-medium w-20">Pending</th>
+                                                <th className="px-4 py-3 text-center font-medium w-24">Received</th>
+                                                <th className="px-4 py-3 text-center font-medium w-24">Accepted</th>
+                                                <th className="px-4 py-3 text-center font-medium w-24">Rejected</th>
+                                                <th className="px-4 py-3 text-center font-medium w-28">Unit Cost</th>
+                                                <th className="px-4 py-3 text-right font-medium w-28">Total Cost</th>
+                                            </tr>
                                             </thead>
                                             <tbody className="divide-y divide-border">
-                                                {items.map((item, idx) => (
-                                                    <tr key={idx} className="bg-card">
-                                                        <td className="px-4 py-3">
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="flex h-10 w-10 items-center justify-center rounded-md bg-muted">
-                                                                    <Package className="h-5 w-5 text-muted-foreground" />
-                                                                </div>
-                                                                <div>
-                                                                    <div className="font-medium">{item.variant_name}</div>
-                                                                    <div className="text-xs text-muted-foreground">{item.sku}</div>
-                                                                </div>
+                                            {items.map((item, idx) => (
+                                                <tr key={idx} className="bg-card">
+                                                    <td className="px-4 py-3">
+                                                        <div className="flex items-center gap-3">
+                                                            <div
+                                                                className="flex h-10 w-10 items-center justify-center rounded-md bg-muted">
+                                                                <Package className="h-5 w-5 text-muted-foreground" />
                                                             </div>
-                                                        </td>
-                                                        <td className="px-4 py-3 text-center text-muted-foreground">
-                                                            {item.ordered_qty}
-                                                        </td>
-                                                        <td className="px-4 py-3 text-center text-muted-foreground">
-                                                            {item.pending_qty}
-                                                        </td>
-                                                        <td className="px-4 py-3 text-center">
-                                                            <Input
-                                                                type="number"
-                                                                value={item.received_qty}
-                                                                onChange={(e) => updateItem(idx, 'received_qty', parseInt(e.target.value) || 0)}
-                                                                className="h-8 w-20 text-center bg-muted/50 border-0 mx-auto"
-                                                                min="0"
-                                                                max={item.pending_qty}
-                                                            />
-                                                        </td>
-                                                        <td className="px-4 py-3 text-center">
-                                                            <Input
-                                                                type="number"
-                                                                value={item.accepted_qty}
-                                                                onChange={(e) => updateItem(idx, 'accepted_qty', parseInt(e.target.value) || 0)}
-                                                                className="h-8 w-20 text-center bg-muted/50 border-0 mx-auto"
-                                                                min="0"
-                                                                max={item.received_qty}
-                                                            />
-                                                        </td>
-                                                        <td className="px-4 py-3 text-center">
-                                                            <Input
-                                                                type="number"
-                                                                value={item.rejected_qty}
-                                                                onChange={(e) => updateItem(idx, 'rejected_qty', parseInt(e.target.value) || 0)}
-                                                                className="h-8 w-20 text-center bg-muted/50 border-0 mx-auto"
-                                                                min="0"
-                                                            />
-                                                        </td>
-                                                        <td className="px-4 py-3 text-center text-muted-foreground">
-                                                            ${parseFloat(item.unit_purchase_cost_price).toFixed(2)}
-                                                        </td>
-                                                        <td className="px-4 py-3 text-right font-medium">
-                                                            ${parseFloat(item.total_cost_price).toFixed(2)}
-                                                        </td>
-                                                    </tr>
-                                                ))}
+                                                            <div>
+                                                                <div className="font-medium">{item.variant_name}</div>
+                                                                <div
+                                                                    className="text-xs text-muted-foreground">{item.sku}</div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-4 py-3 text-center text-muted-foreground">
+                                                        {item.ordered_qty}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-center text-muted-foreground">
+                                                        {item.pending_qty}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-center">
+                                                        <Input
+                                                            type="number"
+                                                            value={item.received_qty}
+                                                            onChange={(e) => updateItem(idx, 'received_qty', parseInt(e.target.value) || 0)}
+                                                            className="h-8 w-20 text-center bg-muted/50 border-0 mx-auto"
+                                                            min="0"
+                                                            max={item.pending_qty}
+                                                        />
+                                                    </td>
+                                                    <td className="px-4 py-3 text-center">
+                                                        <Input
+                                                            type="number"
+                                                            value={item.accepted_qty}
+                                                            onChange={(e) => updateItem(idx, 'accepted_qty', parseInt(e.target.value) || 0)}
+                                                            className="h-8 w-20 text-center bg-muted/50 border-0 mx-auto"
+                                                            min="0"
+                                                            max={item.received_qty}
+                                                        />
+                                                    </td>
+                                                    <td className="px-4 py-3 text-center">
+                                                        <Input
+                                                            type="number"
+                                                            value={item.rejected_qty}
+                                                            onChange={(e) => updateItem(idx, 'rejected_qty', parseInt(e.target.value) || 0)}
+                                                            className="h-8 w-20 text-center bg-muted/50 border-0 mx-auto"
+                                                            min="0"
+                                                        />
+                                                    </td>
+                                                    <td className="px-4 py-3 text-center text-muted-foreground">
+                                                        ${parseFloat(item.unit_purchase_cost_price).toFixed(2)}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-right font-medium">
+                                                        ${parseFloat(item.total_cost_price).toFixed(2)}
+                                                    </td>
+                                                </tr>
+                                            ))}
                                             </tbody>
                                         </table>
                                     </div>
@@ -472,7 +495,8 @@ export function GoodsReceiptFormDialog({ open, onOpenChange, approvedPurchaseOrd
                                         <div className="space-y-3">
                                             <div className="flex items-center justify-between">
                                                 <span className="text-muted-foreground">Distribution Mode</span>
-                                                <Select value={costDistributionMode} onValueChange={(v) => setCostDistributionMode(v as CostDistributionMode)}>
+                                                <Select value={costDistributionMode}
+                                                        onValueChange={(v) => setCostDistributionMode(v as CostDistributionMode)}>
                                                     <SelectTrigger className="w-40 bg-muted/50 border-0">
                                                         <SelectValue />
                                                     </SelectTrigger>
@@ -517,7 +541,8 @@ export function GoodsReceiptFormDialog({ open, onOpenChange, approvedPurchaseOrd
                                             </div>
                                             <div className="border-t pt-3 flex items-center justify-between">
                                                 <span className="font-semibold">Total Cost</span>
-                                                <span className="text-xl font-bold">${totals.itemsTotal.toFixed(2)}</span>
+                                                <span
+                                                    className="text-xl font-bold">${totals.itemsTotal.toFixed(2)}</span>
                                             </div>
                                             <div className="text-xs text-muted-foreground">
                                                 {totals.totalAccepted} units accepted, {totals.totalRejected} rejected
