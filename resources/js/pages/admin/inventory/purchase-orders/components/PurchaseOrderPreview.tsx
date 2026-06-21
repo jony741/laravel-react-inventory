@@ -1,3 +1,4 @@
+import { Link } from '@inertiajs/react';
 import { Pencil, ShoppingCart, X, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -8,7 +9,6 @@ export function PurchaseOrderPreview({
     open,
     onOpenChange,
     order,
-    onEdit,
 }: PurchaseOrderPreviewProps) {
     if (!order) {
         return null;
@@ -32,13 +32,12 @@ export function PurchaseOrderPreview({
                             <X className="mr-2 h-4 w-4" />
                             Close
                         </Button>
-                        {order.status === 'DRAFT' && onEdit && (
-                            <Button type="button" size="sm" onClick={() => {
-                                onOpenChange(false);
-                                onEdit(order);
-                            }}>
-                                <Pencil className="mr-2 h-4 w-4" />
-                                Edit
+                        {order.status === 'DRAFT' && (
+                            <Button type="button" size="sm" asChild>
+                                <Link href={`/admin/inventory/purchase-orders/${order.id}/edit`}>
+                                    <Pencil className="mr-2 h-4 w-4" />
+                                    Edit
+                                </Link>
                             </Button>
                         )}
                     </div>
