@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 
@@ -20,12 +21,12 @@ use Illuminate\Support\Carbon;
  * @property bool $discount_percentage
  * @property string|null $discount
  * @property string|null $tax_percentage
- * @property int $received_qty
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
+ * @property-read int|null $receipt_items_sum_accepted_qty
  */
-#[Fillable(['purchase_order_id', 'variant_id', 'qty', 'purchase_price', 'subtotal', 'discount_percentage', 'discount', 'tax_percentage', 'received_qty'])]
+#[Fillable(['purchase_order_id', 'variant_id', 'qty', 'purchase_price', 'subtotal', 'discount_percentage', 'discount', 'tax_percentage'])]
 class PurchaseOrderItem extends Model
 {
     /** @use HasFactory<PurchaseOrderItemFactory> */
@@ -35,7 +36,6 @@ class PurchaseOrderItem extends Model
     {
         return [
             'qty' => 'integer',
-            'received_qty' => 'integer',
             'purchase_price' => 'decimal:2',
             'subtotal' => 'decimal:2',
             'discount_percentage' => 'boolean',
@@ -52,5 +52,11 @@ class PurchaseOrderItem extends Model
     public function variant(): BelongsTo
     {
         return $this->belongsTo(ProductVariant::class, 'variant_id');
+    }
+
+    /** @return HasMany<PurChaseOrderReceiptItem, $this> */
+    public function receiptItems(): HasMany
+    {
+        return $this->hasMany(PurChaseOrderReceiptItem::class, 'purchase_order_item_id');
     }
 }

@@ -80,7 +80,7 @@ export type PurchaseOrderItem = {
     discount_percentage: boolean;
     discount: string | null;
     tax_percentage: string | null;
-    received_qty: number;
+    receipt_items_sum_accepted_qty: number | null;
     variant?: ProductVariant;
     created_at: string;
     updated_at: string;

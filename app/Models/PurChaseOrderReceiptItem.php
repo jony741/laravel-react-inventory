@@ -36,7 +36,7 @@ use Illuminate\Support\Carbon;
     'purchase_order_receipt_id', 'purchase_order_item_id', 'product_variant_id',
     'ordered_qty', 'received_qty', 'accepted_qty', 'rejected_qty', 'rejection_reason',
     'unit_purchase_cost_price', 'unit_shipping_cost', 'unit_custom_duty', 'unit_other_cost',
-    'total_cost_price', 'batch_number', 'expiry_date', 'notes'
+    'total_cost_price', 'batch_number', 'expiry_date', 'notes',
 ])]
 class PurChaseOrderReceiptItem extends Model
 {

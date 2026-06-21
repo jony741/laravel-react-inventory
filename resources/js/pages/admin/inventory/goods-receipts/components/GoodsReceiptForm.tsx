@@ -5,6 +5,11 @@ import {
 import { useState, useMemo, useEffect } from 'react';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
+import {
+    DialogHeader,
+    DialogTitle,
+    DialogDescription
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -15,15 +20,10 @@ import {
     SelectValue
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import type { PurchaseOrder } from '@/types';
-import type { GRNItemFormData, StoreOption, CostDistributionMode } from './types';
+import { store as storeGoodsReceipt } from '@/routes/goods-receipts';
+import type { GRNItemFormData, CostDistributionMode, GoodsReceiptFormProps } from './types';
 
-type Props = {
-    purchaseOrder: PurchaseOrder;
-    stores: StoreOption[];
-};
-
-export function GoodsReceiptForm({ purchaseOrder, stores }: Props) {
+export function GoodsReceiptForm({ purchaseOrder, stores, isDialog = false, onBack, onSuccess }: GoodsReceiptFormProps) {
     const [selectedStore, setSelectedStore] = useState<string>(purchaseOrder.store_id.toString());
     const [receivedDate, setReceivedDate] = useState<string>(new Date().toISOString().split('T')[0]);
     const [supplierInvoiceNo, setSupplierInvoiceNo] = useState<string>(purchaseOrder.supplier_invoice_number || '');
@@ -42,7 +42,7 @@ export function GoodsReceiptForm({ purchaseOrder, stores }: Props) {
     useEffect(() => {
         if (purchaseOrder.items) {
             const grnItems: GRNItemFormData[] = purchaseOrder.items.map(item => {
-                const pendingQty = item.qty - item.received_qty;
+                const pendingQty = item.qty - (item.receipt_items_sum_accepted_qty ?? 0);
                 return {
                     purchase_order_item_id: item.id,
                     product_variant_id: item.variant_id,
@@ -78,52 +78,110 @@ export function GoodsReceiptForm({ purchaseOrder, stores }: Props) {
         const totalCustomDuty = parseFloat(customDuty) || 0;
         const totalOtherCost = parseFloat(otherCost) || 0;
 
-        if (items.length === 0) return;
+        if (items.length === 0) {
+            return;
+        }
 
         const updated = [...items];
+        const activeItems = updated.filter(i => i.accepted_qty > 0);
+
+        if (activeItems.length === 0) {
+            updated.forEach(item => {
+                item.unit_shipping_cost = '0';
+                item.unit_custom_duty = '0';
+                item.unit_other_cost = '0';
+                item.total_cost_price = '0';
+            });
+            setItems(updated);
+            return;
+        }
 
         if (costDistributionMode === 'ITEM_WISE') {
-            const itemCount = items.filter(i => i.accepted_qty > 0).length || 1;
+            const itemCount = activeItems.length;
             const perItemShipping = totalShipping / itemCount;
             const perItemCustomDuty = totalCustomDuty / itemCount;
             const perItemOtherCost = totalOtherCost / itemCount;
 
-            updated.forEach(item => {
-                if (item.accepted_qty > 0) {
-                    item.unit_shipping_cost = (perItemShipping / item.accepted_qty).toFixed(2);
-                    item.unit_custom_duty = (perItemCustomDuty / item.accepted_qty).toFixed(2);
-                    item.unit_other_cost = (perItemOtherCost / item.accepted_qty).toFixed(2);
+            let distributedShipping = 0;
+            let distributedCustomDuty = 0;
+            let distributedOtherCost = 0;
+
+            activeItems.forEach((item, index) => {
+                const isLastItem = index === activeItems.length - 1;
+                let itemShipping: number;
+                let itemCustomDuty: number;
+                let itemOtherCost: number;
+
+                if (isLastItem) {
+                    itemShipping = Math.round((totalShipping - distributedShipping) * 100) / 100;
+                    itemCustomDuty = Math.round((totalCustomDuty - distributedCustomDuty) * 100) / 100;
+                    itemOtherCost = Math.round((totalOtherCost - distributedOtherCost) * 100) / 100;
                 } else {
-                    item.unit_shipping_cost = '0';
-                    item.unit_custom_duty = '0';
-                    item.unit_other_cost = '0';
+                    itemShipping = Math.floor(perItemShipping * 100) / 100;
+                    itemCustomDuty = Math.floor(perItemCustomDuty * 100) / 100;
+                    itemOtherCost = Math.floor(perItemOtherCost * 100) / 100;
+
+                    distributedShipping += itemShipping;
+                    distributedCustomDuty += itemCustomDuty;
+                    distributedOtherCost += itemOtherCost;
                 }
-                calculateItemTotal(item);
+
+                item.unit_shipping_cost = (itemShipping / item.accepted_qty).toFixed(2);
+                item.unit_custom_duty = (itemCustomDuty / item.accepted_qty).toFixed(2);
+                item.unit_other_cost = (itemOtherCost / item.accepted_qty).toFixed(2);
+
+                const unitPurchasePrice = parseFloat(item.unit_purchase_cost_price) || 0;
+                const itemPurchaseTotal = unitPurchasePrice * item.accepted_qty;
+                item.total_cost_price = (itemPurchaseTotal + itemShipping + itemCustomDuty + itemOtherCost).toFixed(2);
             });
         } else {
-            const totalUnits = items.reduce((sum, item) => sum + item.accepted_qty, 0) || 1;
-            const perUnitShipping = totalShipping / totalUnits;
-            const perUnitCustomDuty = totalCustomDuty / totalUnits;
-            const perUnitOtherCost = totalOtherCost / totalUnits;
+            const totalUnits = activeItems.reduce((sum, item) => sum + item.accepted_qty, 0);
 
-            updated.forEach(item => {
-                item.unit_shipping_cost = perUnitShipping.toFixed(2);
-                item.unit_custom_duty = perUnitCustomDuty.toFixed(2);
-                item.unit_other_cost = perUnitOtherCost.toFixed(2);
-                calculateItemTotal(item);
+            let distributedShipping = 0;
+            let distributedCustomDuty = 0;
+            let distributedOtherCost = 0;
+
+            activeItems.forEach((item, index) => {
+                const isLastItem = index === activeItems.length - 1;
+                const proportion = item.accepted_qty / totalUnits;
+                let itemShipping: number;
+                let itemCustomDuty: number;
+                let itemOtherCost: number;
+
+                if (isLastItem) {
+                    itemShipping = Math.round((totalShipping - distributedShipping) * 100) / 100;
+                    itemCustomDuty = Math.round((totalCustomDuty - distributedCustomDuty) * 100) / 100;
+                    itemOtherCost = Math.round((totalOtherCost - distributedOtherCost) * 100) / 100;
+                } else {
+                    itemShipping = Math.floor(totalShipping * proportion * 100) / 100;
+                    itemCustomDuty = Math.floor(totalCustomDuty * proportion * 100) / 100;
+                    itemOtherCost = Math.floor(totalOtherCost * proportion * 100) / 100;
+
+                    distributedShipping += itemShipping;
+                    distributedCustomDuty += itemCustomDuty;
+                    distributedOtherCost += itemOtherCost;
+                }
+
+                item.unit_shipping_cost = (itemShipping / item.accepted_qty).toFixed(2);
+                item.unit_custom_duty = (itemCustomDuty / item.accepted_qty).toFixed(2);
+                item.unit_other_cost = (itemOtherCost / item.accepted_qty).toFixed(2);
+
+                const unitPurchasePrice = parseFloat(item.unit_purchase_cost_price) || 0;
+                const itemPurchaseTotal = unitPurchasePrice * item.accepted_qty;
+                item.total_cost_price = (itemPurchaseTotal + itemShipping + itemCustomDuty + itemOtherCost).toFixed(2);
             });
         }
 
-        setItems(updated);
-    };
+        updated.forEach(item => {
+            if (item.accepted_qty === 0) {
+                item.unit_shipping_cost = '0';
+                item.unit_custom_duty = '0';
+                item.unit_other_cost = '0';
+                item.total_cost_price = '0';
+            }
+        });
 
-    const calculateItemTotal = (item: GRNItemFormData) => {
-        const unitPurchasePrice = parseFloat(item.unit_purchase_cost_price) || 0;
-        const unitShipping = parseFloat(item.unit_shipping_cost) || 0;
-        const unitCustomDuty = parseFloat(item.unit_custom_duty) || 0;
-        const unitOtherCost = parseFloat(item.unit_other_cost) || 0;
-        const totalUnitCost = unitPurchasePrice + unitShipping + unitCustomDuty + unitOtherCost;
-        item.total_cost_price = (item.accepted_qty * totalUnitCost).toFixed(2);
+        setItems(updated);
     };
 
     const updateItem = (index: number, field: keyof GRNItemFormData, value: string | number) => {
@@ -142,7 +200,6 @@ export function GoodsReceiptForm({ purchaseOrder, stores }: Props) {
             updated[index].received_qty = acceptedQty + rejectedQty;
         }
 
-        calculateItemTotal(updated[index]);
         setItems(updated);
     };
 
@@ -162,17 +219,25 @@ export function GoodsReceiptForm({ purchaseOrder, stores }: Props) {
     }, [items, shippingCost, customDuty, otherCost]);
 
     const handleBack = () => {
-        router.visit('/admin/inventory/purchase-orders');
+        if (onBack) {
+            onBack();
+        } else {
+            router.visit('/admin/inventory/purchase-orders');
+        }
     };
+
+    const formProps = isDialog
+        ? storeGoodsReceipt.form()
+        : { action: '/admin/inventory/goods-receipts', method: 'post' as const };
 
     return (
         <Form
-            className="flex flex-col h-full"
-            action="/admin/inventory/goods-receipts"
-            method="post"
+            className={`flex flex-col h-full ${isDialog ? 'max-h-[90vh]' : ''}`}
+            {...formProps}
             onStart={() => setIsSubmitting(true)}
             onSuccess={() => {
                 setIsSubmitting(false);
+                onSuccess?.();
             }}
             onError={() => setIsSubmitting(false)}
             transform={() => ({
@@ -207,37 +272,71 @@ export function GoodsReceiptForm({ purchaseOrder, stores }: Props) {
             {({ errors, processing }) => (
                 <>
                     {/* Header */}
-                    <div className="sticky top-0 z-10 bg-background flex items-center justify-between border-b px-6 py-3">
-                        <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <Receipt className="h-4 w-4" />
-                                <span>Goods Receipt</span>
-                                <span className="text-muted-foreground/50">›</span>
-                                <span className="text-foreground font-medium">
-                                    New GRN for {purchaseOrder.po_number}
-                                </span>
+                    {isDialog ? (
+                        <DialogHeader className="px-10 pt-4 pb-4 border-b shrink-0">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <Button type="button" variant="ghost" size="icon" onClick={handleBack}>
+                                        <ArrowLeft className="h-4 w-4" />
+                                    </Button>
+                                    <div>
+                                        <DialogTitle className="flex items-center gap-2">
+                                            <Receipt className="h-5 w-5" />
+                                            Create Goods Receipt
+                                        </DialogTitle>
+                                        <DialogDescription>
+                                            For {purchaseOrder.po_number} - {purchaseOrder.supplier?.name}
+                                        </DialogDescription>
+                                    </div>
+                                </div>
+                                <Button type="submit" size="sm" disabled={processing || isSubmitting}>
+                                    {processing || isSubmitting ? (
+                                        <>
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            Creating...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Check className="mr-2 h-4 w-4" />
+                                            Create GRN
+                                        </>
+                                    )}
+                                </Button>
+                            </div>
+                        </DialogHeader>
+                    ) : (
+                        <div className="sticky top-0 z-10 bg-background flex items-center justify-between border-b px-6 py-3">
+                            <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                    <Receipt className="h-4 w-4" />
+                                    <span>Goods Receipt</span>
+                                    <span className="text-muted-foreground/50">›</span>
+                                    <span className="text-foreground font-medium">
+                                        New GRN for {purchaseOrder.po_number}
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Button type="button" variant="ghost" size="sm" onClick={handleBack}>
+                                    <ArrowLeft className="mr-2 h-4 w-4" />
+                                    Back
+                                </Button>
+                                <Button type="submit" size="sm" disabled={processing || isSubmitting}>
+                                    {processing || isSubmitting ? (
+                                        <>
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            Creating...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Check className="mr-2 h-4 w-4" />
+                                            Create GRN
+                                        </>
+                                    )}
+                                </Button>
                             </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <Button type="button" variant="ghost" size="sm" onClick={handleBack}>
-                                <ArrowLeft className="mr-2 h-4 w-4" />
-                                Back
-                            </Button>
-                            <Button type="submit" size="sm" disabled={processing || isSubmitting}>
-                                {processing || isSubmitting ? (
-                                    <>
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        Creating...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Check className="mr-2 h-4 w-4" />
-                                        Create GRN
-                                    </>
-                                )}
-                            </Button>
-                        </div>
-                    </div>
+                    )}
 
                     {/* Scrollable Content */}
                     <div className="flex-1 overflow-y-auto">

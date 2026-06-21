@@ -39,7 +39,24 @@ export type GRNFormData = {
 
 export type StoreOption = Pick<StoreType, 'id' | 'name'>;
 
-export type GoodsReceiptCreateProps = {
+export type GoodsReceiptFormProps = {
     purchaseOrder: PurchaseOrder;
+    stores: StoreOption[];
+    isDialog?: boolean;
+    onBack?: () => void;
+    onSuccess?: () => void;
+};
+
+export type POSelectorDialogProps = {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    purchaseOrders: PurchaseOrder[];
+    onSelect: (po: PurchaseOrder) => void;
+};
+
+export type GoodsReceiptFormDialogProps = {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    approvedPurchaseOrders: PurchaseOrder[];
     stores: StoreOption[];
 };
