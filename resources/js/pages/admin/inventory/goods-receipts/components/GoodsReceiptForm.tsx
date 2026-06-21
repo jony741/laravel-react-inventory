@@ -5,6 +5,11 @@ import {
 import { useState, useMemo, useEffect } from 'react';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
+import {
+    DialogHeader,
+    DialogTitle,
+    DialogDescription
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -15,15 +20,10 @@ import {
     SelectValue
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import type { PurchaseOrder } from '@/types';
-import type { GRNItemFormData, StoreOption, CostDistributionMode } from './types';
+import { store as storeGoodsReceipt } from '@/routes/goods-receipts';
+import type { GRNItemFormData, CostDistributionMode, GoodsReceiptFormProps } from './types';
 
-type Props = {
-    purchaseOrder: PurchaseOrder;
-    stores: StoreOption[];
-};
-
-export function GoodsReceiptForm({ purchaseOrder, stores }: Props) {
+export function GoodsReceiptForm({ purchaseOrder, stores, isDialog = false, onBack, onSuccess }: GoodsReceiptFormProps) {
     const [selectedStore, setSelectedStore] = useState<string>(purchaseOrder.store_id.toString());
     const [receivedDate, setReceivedDate] = useState<string>(new Date().toISOString().split('T')[0]);
     const [supplierInvoiceNo, setSupplierInvoiceNo] = useState<string>(purchaseOrder.supplier_invoice_number || '');
@@ -219,17 +219,25 @@ export function GoodsReceiptForm({ purchaseOrder, stores }: Props) {
     }, [items, shippingCost, customDuty, otherCost]);
 
     const handleBack = () => {
-        router.visit('/admin/inventory/purchase-orders');
+        if (onBack) {
+            onBack();
+        } else {
+            router.visit('/admin/inventory/purchase-orders');
+        }
     };
+
+    const formProps = isDialog
+        ? storeGoodsReceipt.form()
+        : { action: '/admin/inventory/goods-receipts', method: 'post' as const };
 
     return (
         <Form
-            className="flex flex-col h-full"
-            action="/admin/inventory/goods-receipts"
-            method="post"
+            className={`flex flex-col h-full ${isDialog ? 'max-h-[90vh]' : ''}`}
+            {...formProps}
             onStart={() => setIsSubmitting(true)}
             onSuccess={() => {
                 setIsSubmitting(false);
+                onSuccess?.();
             }}
             onError={() => setIsSubmitting(false)}
             transform={() => ({
@@ -264,37 +272,71 @@ export function GoodsReceiptForm({ purchaseOrder, stores }: Props) {
             {({ errors, processing }) => (
                 <>
                     {/* Header */}
-                    <div className="sticky top-0 z-10 bg-background flex items-center justify-between border-b px-6 py-3">
-                        <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <Receipt className="h-4 w-4" />
-                                <span>Goods Receipt</span>
-                                <span className="text-muted-foreground/50">›</span>
-                                <span className="text-foreground font-medium">
-                                    New GRN for {purchaseOrder.po_number}
-                                </span>
+                    {isDialog ? (
+                        <DialogHeader className="px-10 pt-4 pb-4 border-b shrink-0">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <Button type="button" variant="ghost" size="icon" onClick={handleBack}>
+                                        <ArrowLeft className="h-4 w-4" />
+                                    </Button>
+                                    <div>
+                                        <DialogTitle className="flex items-center gap-2">
+                                            <Receipt className="h-5 w-5" />
+                                            Create Goods Receipt
+                                        </DialogTitle>
+                                        <DialogDescription>
+                                            For {purchaseOrder.po_number} - {purchaseOrder.supplier?.name}
+                                        </DialogDescription>
+                                    </div>
+                                </div>
+                                <Button type="submit" size="sm" disabled={processing || isSubmitting}>
+                                    {processing || isSubmitting ? (
+                                        <>
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            Creating...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Check className="mr-2 h-4 w-4" />
+                                            Create GRN
+                                        </>
+                                    )}
+                                </Button>
+                            </div>
+                        </DialogHeader>
+                    ) : (
+                        <div className="sticky top-0 z-10 bg-background flex items-center justify-between border-b px-6 py-3">
+                            <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                    <Receipt className="h-4 w-4" />
+                                    <span>Goods Receipt</span>
+                                    <span className="text-muted-foreground/50">›</span>
+                                    <span className="text-foreground font-medium">
+                                        New GRN for {purchaseOrder.po_number}
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Button type="button" variant="ghost" size="sm" onClick={handleBack}>
+                                    <ArrowLeft className="mr-2 h-4 w-4" />
+                                    Back
+                                </Button>
+                                <Button type="submit" size="sm" disabled={processing || isSubmitting}>
+                                    {processing || isSubmitting ? (
+                                        <>
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            Creating...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Check className="mr-2 h-4 w-4" />
+                                            Create GRN
+                                        </>
+                                    )}
+                                </Button>
                             </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <Button type="button" variant="ghost" size="sm" onClick={handleBack}>
-                                <ArrowLeft className="mr-2 h-4 w-4" />
-                                Back
-                            </Button>
-                            <Button type="submit" size="sm" disabled={processing || isSubmitting}>
-                                {processing || isSubmitting ? (
-                                    <>
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        Creating...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Check className="mr-2 h-4 w-4" />
-                                        Create GRN
-                                    </>
-                                )}
-                            </Button>
-                        </div>
-                    </div>
+                    )}
 
                     {/* Scrollable Content */}
                     <div className="flex-1 overflow-y-auto">
