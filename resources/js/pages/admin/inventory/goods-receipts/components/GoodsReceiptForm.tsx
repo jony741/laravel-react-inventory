@@ -78,52 +78,110 @@ export function GoodsReceiptForm({ purchaseOrder, stores }: Props) {
         const totalCustomDuty = parseFloat(customDuty) || 0;
         const totalOtherCost = parseFloat(otherCost) || 0;
 
-        if (items.length === 0) return;
+        if (items.length === 0) {
+            return;
+        }
 
         const updated = [...items];
+        const activeItems = updated.filter(i => i.accepted_qty > 0);
+
+        if (activeItems.length === 0) {
+            updated.forEach(item => {
+                item.unit_shipping_cost = '0';
+                item.unit_custom_duty = '0';
+                item.unit_other_cost = '0';
+                item.total_cost_price = '0';
+            });
+            setItems(updated);
+            return;
+        }
 
         if (costDistributionMode === 'ITEM_WISE') {
-            const itemCount = items.filter(i => i.accepted_qty > 0).length || 1;
+            const itemCount = activeItems.length;
             const perItemShipping = totalShipping / itemCount;
             const perItemCustomDuty = totalCustomDuty / itemCount;
             const perItemOtherCost = totalOtherCost / itemCount;
 
-            updated.forEach(item => {
-                if (item.accepted_qty > 0) {
-                    item.unit_shipping_cost = (perItemShipping / item.accepted_qty).toFixed(2);
-                    item.unit_custom_duty = (perItemCustomDuty / item.accepted_qty).toFixed(2);
-                    item.unit_other_cost = (perItemOtherCost / item.accepted_qty).toFixed(2);
+            let distributedShipping = 0;
+            let distributedCustomDuty = 0;
+            let distributedOtherCost = 0;
+
+            activeItems.forEach((item, index) => {
+                const isLastItem = index === activeItems.length - 1;
+                let itemShipping: number;
+                let itemCustomDuty: number;
+                let itemOtherCost: number;
+
+                if (isLastItem) {
+                    itemShipping = Math.round((totalShipping - distributedShipping) * 100) / 100;
+                    itemCustomDuty = Math.round((totalCustomDuty - distributedCustomDuty) * 100) / 100;
+                    itemOtherCost = Math.round((totalOtherCost - distributedOtherCost) * 100) / 100;
                 } else {
-                    item.unit_shipping_cost = '0';
-                    item.unit_custom_duty = '0';
-                    item.unit_other_cost = '0';
+                    itemShipping = Math.floor(perItemShipping * 100) / 100;
+                    itemCustomDuty = Math.floor(perItemCustomDuty * 100) / 100;
+                    itemOtherCost = Math.floor(perItemOtherCost * 100) / 100;
+
+                    distributedShipping += itemShipping;
+                    distributedCustomDuty += itemCustomDuty;
+                    distributedOtherCost += itemOtherCost;
                 }
-                calculateItemTotal(item);
+
+                item.unit_shipping_cost = (itemShipping / item.accepted_qty).toFixed(2);
+                item.unit_custom_duty = (itemCustomDuty / item.accepted_qty).toFixed(2);
+                item.unit_other_cost = (itemOtherCost / item.accepted_qty).toFixed(2);
+
+                const unitPurchasePrice = parseFloat(item.unit_purchase_cost_price) || 0;
+                const itemPurchaseTotal = unitPurchasePrice * item.accepted_qty;
+                item.total_cost_price = (itemPurchaseTotal + itemShipping + itemCustomDuty + itemOtherCost).toFixed(2);
             });
         } else {
-            const totalUnits = items.reduce((sum, item) => sum + item.accepted_qty, 0) || 1;
-            const perUnitShipping = totalShipping / totalUnits;
-            const perUnitCustomDuty = totalCustomDuty / totalUnits;
-            const perUnitOtherCost = totalOtherCost / totalUnits;
+            const totalUnits = activeItems.reduce((sum, item) => sum + item.accepted_qty, 0);
 
-            updated.forEach(item => {
-                item.unit_shipping_cost = perUnitShipping.toFixed(2);
-                item.unit_custom_duty = perUnitCustomDuty.toFixed(2);
-                item.unit_other_cost = perUnitOtherCost.toFixed(2);
-                calculateItemTotal(item);
+            let distributedShipping = 0;
+            let distributedCustomDuty = 0;
+            let distributedOtherCost = 0;
+
+            activeItems.forEach((item, index) => {
+                const isLastItem = index === activeItems.length - 1;
+                const proportion = item.accepted_qty / totalUnits;
+                let itemShipping: number;
+                let itemCustomDuty: number;
+                let itemOtherCost: number;
+
+                if (isLastItem) {
+                    itemShipping = Math.round((totalShipping - distributedShipping) * 100) / 100;
+                    itemCustomDuty = Math.round((totalCustomDuty - distributedCustomDuty) * 100) / 100;
+                    itemOtherCost = Math.round((totalOtherCost - distributedOtherCost) * 100) / 100;
+                } else {
+                    itemShipping = Math.floor(totalShipping * proportion * 100) / 100;
+                    itemCustomDuty = Math.floor(totalCustomDuty * proportion * 100) / 100;
+                    itemOtherCost = Math.floor(totalOtherCost * proportion * 100) / 100;
+
+                    distributedShipping += itemShipping;
+                    distributedCustomDuty += itemCustomDuty;
+                    distributedOtherCost += itemOtherCost;
+                }
+
+                item.unit_shipping_cost = (itemShipping / item.accepted_qty).toFixed(2);
+                item.unit_custom_duty = (itemCustomDuty / item.accepted_qty).toFixed(2);
+                item.unit_other_cost = (itemOtherCost / item.accepted_qty).toFixed(2);
+
+                const unitPurchasePrice = parseFloat(item.unit_purchase_cost_price) || 0;
+                const itemPurchaseTotal = unitPurchasePrice * item.accepted_qty;
+                item.total_cost_price = (itemPurchaseTotal + itemShipping + itemCustomDuty + itemOtherCost).toFixed(2);
             });
         }
 
-        setItems(updated);
-    };
+        updated.forEach(item => {
+            if (item.accepted_qty === 0) {
+                item.unit_shipping_cost = '0';
+                item.unit_custom_duty = '0';
+                item.unit_other_cost = '0';
+                item.total_cost_price = '0';
+            }
+        });
 
-    const calculateItemTotal = (item: GRNItemFormData) => {
-        const unitPurchasePrice = parseFloat(item.unit_purchase_cost_price) || 0;
-        const unitShipping = parseFloat(item.unit_shipping_cost) || 0;
-        const unitCustomDuty = parseFloat(item.unit_custom_duty) || 0;
-        const unitOtherCost = parseFloat(item.unit_other_cost) || 0;
-        const totalUnitCost = unitPurchasePrice + unitShipping + unitCustomDuty + unitOtherCost;
-        item.total_cost_price = (item.accepted_qty * totalUnitCost).toFixed(2);
+        setItems(updated);
     };
 
     const updateItem = (index: number, field: keyof GRNItemFormData, value: string | number) => {
@@ -142,7 +200,6 @@ export function GoodsReceiptForm({ purchaseOrder, stores }: Props) {
             updated[index].received_qty = acceptedQty + rejectedQty;
         }
 
-        calculateItemTotal(updated[index]);
         setItems(updated);
     };
 
