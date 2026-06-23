@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { index, create } from '@/routes/purchase-orders';
 import type { PurchaseOrder } from '@/types';
 import {
+    GrnConfirmationDialog,
     PurchaseOrderPreview,
     StatusBadge
 } from './components';
@@ -24,10 +25,17 @@ export default function PurchaseOrdersIndex({ purchaseOrders }: Props) {
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [isGrnConfirmOpen, setIsGrnConfirmOpen] = useState(false);
+    const [grnTargetOrder, setGrnTargetOrder] = useState<PurchaseOrder | null>(null);
 
     const openPreview = (order: PurchaseOrder) => {
         setSelectedOrder(order);
         setIsPreviewOpen(true);
+    };
+
+    const openGrnConfirm = (order: PurchaseOrder) => {
+        setGrnTargetOrder(order);
+        setIsGrnConfirmOpen(true);
     };
 
     return (
@@ -114,10 +122,13 @@ export default function PurchaseOrdersIndex({ purchaseOrders }: Props) {
                                                         <Eye className="h-4 w-4" />
                                                     </Button>
                                                     {(order.status === 'APPROVED' || order.status === 'PARTIALLY_RECEIVED') && (
-                                                        <Button variant="ghost" size="icon" asChild title="Create GRN">
-                                                            <Link href={`/admin/inventory/goods-receipts/create/${order.id}`}>
-                                                                <Receipt className="h-4 w-4 text-primary" />
-                                                            </Link>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            title="Create GRN"
+                                                            onClick={() => openGrnConfirm(order)}
+                                                        >
+                                                            <Receipt className="h-4 w-4 text-primary" />
                                                         </Button>
                                                     )}
                                                     {order.status === 'DRAFT' && (
@@ -171,6 +182,16 @@ export default function PurchaseOrdersIndex({ purchaseOrders }: Props) {
                 open={isPreviewOpen}
                 onOpenChange={setIsPreviewOpen}
                 order={selectedOrder}
+            />
+
+            {/* GRN Confirmation Dialog */}
+            <GrnConfirmationDialog
+                open={isGrnConfirmOpen}
+                onOpenChange={setIsGrnConfirmOpen}
+                orderId={grnTargetOrder?.id || null}
+                poNumber={grnTargetOrder?.po_number}
+                supplierName={grnTargetOrder?.supplier?.name}
+                totalAmount={grnTargetOrder?.total_amount}
             />
         </>
     );

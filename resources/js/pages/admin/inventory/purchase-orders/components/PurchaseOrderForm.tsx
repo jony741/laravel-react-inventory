@@ -25,6 +25,7 @@ import {
     SelectValue
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { GrnConfirmationDialog } from './GrnConfirmationDialog';
 import type { PurchaseOrderFormProps, OrderItemFormData, OrderStatus, VariantOption } from './types';
 import { emptyOrderItem } from './types';
 
@@ -71,6 +72,7 @@ export function PurchaseOrderForm({
     const [currentOrderStatus, setCurrentOrderStatus] = useState<OrderStatus>(() => (order?.status as OrderStatus) || 'NEW');
     const [currentOrderId, setCurrentOrderId] = useState<number | null>(() => order?.id || null);
     const [isApproveConfirmOpen, setIsApproveConfirmOpen] = useState(false);
+    const [isGrnConfirmOpen, setIsGrnConfirmOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isApproving, setIsApproving] = useState(false);
 
@@ -371,9 +373,7 @@ export function PurchaseOrderForm({
                             type="button"
                             size="sm"
                             variant="default"
-                            onClick={() => {
-                                router.visit(`/admin/inventory/goods-receipts/create/${currentOrderId}`);
-                            }}
+                            onClick={() => setIsGrnConfirmOpen(true)}
                         >
                             <Receipt className="mr-2 h-4 w-4" />
                             Create GRN
@@ -840,6 +840,16 @@ export function PurchaseOrderForm({
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            {/* GRN Confirmation Dialog */}
+            <GrnConfirmationDialog
+                open={isGrnConfirmOpen}
+                onOpenChange={setIsGrnConfirmOpen}
+                orderId={currentOrderId}
+                poNumber={order?.po_number}
+                supplierName={selectedSupplierData?.name}
+                totalAmount={totals.total.toFixed(2)}
+            />
         </>
     );
 }
