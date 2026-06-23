@@ -1,5 +1,5 @@
-import { Head } from '@inertiajs/react';
-import { Plus, Pencil, Trash2, Search, ShoppingCart, Eye } from 'lucide-react';
+import { Head, Link } from '@inertiajs/react';
+import { Plus, Pencil, Trash2, Search, ShoppingCart, Eye, Receipt } from 'lucide-react';
 import { useState } from 'react';
 import PurchaseOrderController from '@/actions/App/Http/Controllers/Inventory/PurchaseOrderController';
 import DeleteConfirmationDialog from '@/components/delete-confirmation-dialog';
@@ -9,38 +9,21 @@ import type { PaginationData } from '@/components/pagination';
 import TableSkeleton from '@/components/table-skeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { index } from '@/routes/purchase-orders';
+import { index, create } from '@/routes/purchase-orders';
 import type { PurchaseOrder } from '@/types';
 import {
-    PurchaseOrderForm,
     PurchaseOrderPreview,
     StatusBadge
 } from './components';
 
-import type {SupplierOption, StoreOption, VariantOption} from './components';
-
 type Props = {
     purchaseOrders?: PaginationData<PurchaseOrder>;
-    suppliers: SupplierOption[];
-    stores: StoreOption[];
-    variants: VariantOption[];
 };
 
-export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores, variants }: Props) {
-    const [isFormOpen, setIsFormOpen] = useState(false);
+export default function PurchaseOrdersIndex({ purchaseOrders }: Props) {
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
-
-    const openCreateForm = () => {
-        setSelectedOrder(null);
-        setIsFormOpen(true);
-    };
-
-    const openEditForm = (order: PurchaseOrder) => {
-        setSelectedOrder(order);
-        setIsFormOpen(true);
-    };
 
     const openPreview = (order: PurchaseOrder) => {
         setSelectedOrder(order);
@@ -58,9 +41,11 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
                         title="Purchase Orders"
                         description="Manage purchase orders from suppliers"
                     />
-                    <Button onClick={openCreateForm}>
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add Purchase Order
+                    <Button asChild>
+                        <Link href={create()}>
+                            <Plus className="mr-2 h-4 w-4" />
+                            Add Purchase Order
+                        </Link>
                     </Button>
                 </div>
 
@@ -128,9 +113,18 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
                                                     <Button variant="ghost" size="icon" onClick={() => openPreview(order)}>
                                                         <Eye className="h-4 w-4" />
                                                     </Button>
+                                                    {(order.status === 'APPROVED' || order.status === 'PARTIALLY_RECEIVED') && (
+                                                        <Button variant="ghost" size="icon" asChild title="Create GRN">
+                                                            <Link href={`/admin/inventory/goods-receipts/create/${order.id}`}>
+                                                                <Receipt className="h-4 w-4 text-primary" />
+                                                            </Link>
+                                                        </Button>
+                                                    )}
                                                     {order.status === 'DRAFT' && (
-                                                        <Button variant="ghost" size="icon" onClick={() => openEditForm(order)}>
-                                                            <Pencil className="h-4 w-4" />
+                                                        <Button variant="ghost" size="icon" asChild>
+                                                            <Link href={`/admin/inventory/purchase-orders/${order.id}/edit`}>
+                                                                <Pencil className="h-4 w-4" />
+                                                            </Link>
                                                         </Button>
                                                     )}
                                                     {order.status === 'DRAFT' && (
@@ -172,22 +166,11 @@ export default function PurchaseOrdersIndex({ purchaseOrders, suppliers, stores,
                 </div>
             </div>
 
-            {/* Add/Edit Form Dialog */}
-            <PurchaseOrderForm
-                open={isFormOpen}
-                onOpenChange={setIsFormOpen}
-                order={selectedOrder}
-                suppliers={suppliers}
-                stores={stores}
-                variants={variants}
-            />
-
             {/* Preview Dialog */}
             <PurchaseOrderPreview
                 open={isPreviewOpen}
                 onOpenChange={setIsPreviewOpen}
                 order={selectedOrder}
-                onEdit={openEditForm}
             />
         </>
     );

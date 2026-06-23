@@ -29,6 +29,31 @@ class PurchaseOrderController extends Controller
         ]);
     }
 
+    public function create(): Response
+    {
+        return Inertia::render('admin/inventory/purchase-orders/create', [
+            'suppliers' => Supplier::where('is_active', true)->get(['id', 'name', 'phone', 'address']),
+            'stores' => Store::where('is_active', true)->get(['id', 'name']),
+            'variants' => ProductVariant::with('product')
+                ->where('is_active', true)
+                ->get(['id', 'product_id', 'sku', 'barcode', 'color', 'size', 'price']),
+        ]);
+    }
+
+    public function edit(PurchaseOrder $purchaseOrder): Response
+    {
+        $purchaseOrder->load(['supplier', 'store', 'items.variant.product']);
+
+        return Inertia::render('admin/inventory/purchase-orders/edit', [
+            'purchaseOrder' => $purchaseOrder,
+            'suppliers' => Supplier::where('is_active', true)->get(['id', 'name', 'phone', 'address']),
+            'stores' => Store::where('is_active', true)->get(['id', 'name']),
+            'variants' => ProductVariant::with('product')
+                ->where('is_active', true)
+                ->get(['id', 'product_id', 'sku', 'barcode', 'color', 'size', 'price']),
+        ]);
+    }
+
     public function store(PurchaseOrderRequest $request): RedirectResponse
     {
         $data = $request->safe()->except('items');
@@ -48,7 +73,7 @@ class PurchaseOrderController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Purchase order created.')]);
 
-        return back();
+        return redirect()->route('purchase-orders.edit', $purchaseOrder);
     }
 
     public function update(PurchaseOrderRequest $request, PurchaseOrder $purchaseOrder): RedirectResponse

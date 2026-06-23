@@ -30,18 +30,15 @@ export type VariantOption = Pick<ProductVariant, 'id' | 'product_id' | 'sku' | '
 export type OrderStatus = 'NEW' | 'DRAFT' | 'APPROVED' | 'PARTIALLY_RECEIVED' | 'RECEIVED';
 
 export type PurchaseOrderFormProps = {
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-    order: PurchaseOrder | null;
+    order?: PurchaseOrder | null;
     suppliers: SupplierOption[];
     stores: StoreOption[];
     variants: VariantOption[];
-    onOrderCreated?: (order: PurchaseOrder) => void;
+    isPage?: boolean;
 };
 
 export type PurchaseOrderPreviewProps = {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     order: PurchaseOrder | null;
-    onEdit?: (order: PurchaseOrder) => void;
 };
