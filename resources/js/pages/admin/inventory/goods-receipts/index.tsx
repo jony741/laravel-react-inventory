@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
 import { Search, Receipt, Eye, Plus } from 'lucide-react';
 import { useState } from 'react';
 import Heading from '@/components/heading';
@@ -8,8 +8,8 @@ import TableSkeleton from '@/components/table-skeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import type { PurchaseOrder } from '@/types';
-import type { StoreOption } from './components';
-import { GoodsReceiptFormDialog } from './components';
+import type { GoodsReceiptDetail, StoreOption } from './components';
+import { GoodsReceiptDetailDialog, GoodsReceiptFormDialog } from './components';
 
 type GoodsReceipt = {
     id: number;
@@ -42,8 +42,18 @@ type GoodsReceipt = {
     };
     items?: Array<{
         id: number;
+        ordered_qty: number;
+        received_qty: number;
         accepted_qty: number;
+        rejected_qty: number;
+        unit_purchase_cost_price: string;
         total_cost_price: string;
+        variant?: {
+            sku: string;
+            product?: {
+                name: string;
+            };
+        };
     }>;
     created_at: string;
 };
@@ -70,6 +80,13 @@ function StatusBadge({ status }: { status: string }) {
 export default function GoodsReceiptsIndex({ goodsReceipts, approvedPurchaseOrders, stores }: Props) {
     const [searchQuery, setSearchQuery] = useState('');
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+    const [selectedReceipt, setSelectedReceipt] = useState<GoodsReceipt | null>(null);
+    const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
+
+    const handleViewReceipt = (receipt: GoodsReceipt) => {
+        setSelectedReceipt(receipt);
+        setIsDetailDialogOpen(true);
+    };
 
     const getTotalCost = (receipt: GoodsReceipt) => {
         if (!receipt.items) {
@@ -166,11 +183,13 @@ export default function GoodsReceiptsIndex({ goodsReceipts, approvedPurchaseOrde
                                             </td>
                                             <td className="px-4 py-3 text-right">
                                                 <div className="flex justify-end gap-2">
-                                                    <Link href={`/admin/inventory/goods-receipts/${receipt.id}`}>
-                                                        <Button variant="ghost" size="icon">
-                                                            <Eye className="h-4 w-4" />
-                                                        </Button>
-                                                    </Link>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() => handleViewReceipt(receipt)}
+                                                    >
+                                                        <Eye className="h-4 w-4" />
+                                                    </Button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -202,6 +221,12 @@ export default function GoodsReceiptsIndex({ goodsReceipts, approvedPurchaseOrde
                 onOpenChange={setIsCreateDialogOpen}
                 approvedPurchaseOrders={approvedPurchaseOrders}
                 stores={stores}
+            />
+
+            <GoodsReceiptDetailDialog
+                open={isDetailDialogOpen}
+                onOpenChange={setIsDetailDialogOpen}
+                goodsReceipt={selectedReceipt as GoodsReceiptDetail}
             />
         </>
     );

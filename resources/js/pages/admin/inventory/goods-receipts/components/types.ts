@@ -60,3 +60,58 @@ export type GoodsReceiptFormDialogProps = {
     approvedPurchaseOrders: PurchaseOrder[];
     stores: StoreOption[];
 };
+
+export type GoodsReceiptItem = {
+    id: number;
+    ordered_qty: number;
+    received_qty: number;
+    accepted_qty: number;
+    rejected_qty: number;
+    unit_purchase_cost_price: string;
+    total_cost_price: string;
+    variant?: {
+        sku: string;
+        product?: {
+            name: string;
+        };
+    };
+};
+
+export type GoodsReceiptDetail = {
+    id: number;
+    grn_number: string;
+    purchase_order_id: number;
+    store_id: number;
+    received_date: string;
+    received_by: number;
+    supplier_invoice_no: string | null;
+    shipping_cost: string;
+    custom_duty: string;
+    other_cost: string;
+    status: 'DRAFT' | 'COMPLETED';
+    notes: string | null;
+    purchase_order?: {
+        id: number;
+        po_number: string;
+        supplier?: {
+            id: number;
+            name: string;
+        };
+    };
+    store?: {
+        id: number;
+        name: string;
+    };
+    receiver?: {
+        id: number;
+        name: string;
+    };
+    items?: GoodsReceiptItem[];
+    created_at: string;
+};
+
+export type GoodsReceiptDetailDialogProps = {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    goodsReceipt: GoodsReceiptDetail | null;
+};

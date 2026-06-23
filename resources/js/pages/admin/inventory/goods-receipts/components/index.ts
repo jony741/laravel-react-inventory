@@ -1,3 +1,4 @@
+export { GoodsReceiptDetailDialog } from './GoodsReceiptDetailDialog';
 export { GoodsReceiptForm } from './GoodsReceiptForm';
 export { GoodsReceiptFormDialog } from './GoodsReceiptFormDialog';
 export { POSelectorDialog } from './POSelectorDialog';
