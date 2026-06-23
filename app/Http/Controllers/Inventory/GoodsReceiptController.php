@@ -120,6 +120,7 @@ class GoodsReceiptController extends Controller
             'date' => $receivedDate,
             'store_id' => $storeId,
             'variant_id' => $grnItem->product_variant_id,
+            'purchase_order_receipt_id' => $grnItem->purchase_order_receipt_id,
             'transaction_type' => 'GRN',
             'reference_type' => PurChaseOrderReceiptItem::class,
             'reference_id' => $grnItem->id,

@@ -13,6 +13,7 @@ return new class extends Migration
             $table->date('date');
             $table->foreignId('store_id')->constrained('stores')->restrictOnDelete();
             $table->foreignId('variant_id')->constrained('product_variants')->restrictOnDelete();
+            $table->foreignId('purchase_order_receipt_id')->constrained('purchase_order_receipts')->restrictOnDelete();
             $table->string('transaction_type');
             $table->string('reference_type')->nullable();
             $table->unsignedBigInteger('reference_id')->nullable();
@@ -30,6 +31,7 @@ return new class extends Migration
 
             $table->index('date');
             $table->index('store_id');
+            $table->index('purchase_order_receipt_id');
             $table->index('variant_id');
             $table->index('transaction_type');
             $table->index(['reference_type', 'reference_id'], 'inv_tx_ref_index');
