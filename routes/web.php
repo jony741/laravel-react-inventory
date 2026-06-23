@@ -2,8 +2,9 @@
 
 use App\Http\Controllers\Crm\CustomerController;
 use App\Http\Controllers\Crm\SupplierController;
-use App\Http\Controllers\Inventory\ProductController;
 use App\Http\Controllers\Inventory\GoodsReceiptController;
+use App\Http\Controllers\Inventory\InventoryStockController;
+use App\Http\Controllers\Inventory\ProductController;
 use App\Http\Controllers\Inventory\PurchaseOrderController;
 use App\Http\Controllers\Settings\BrandController;
 use App\Http\Controllers\Settings\CategoryController;
@@ -27,6 +28,7 @@ Route::middleware('auth')
         Route::get('/inventory/goods-receipts/create/{purchase_order}', [GoodsReceiptController::class, 'create'])->name('goods-receipts.create');
         Route::post('/inventory/goods-receipts', [GoodsReceiptController::class, 'store'])->name('goods-receipts.store');
         Route::get('/inventory/goods-receipts/{goods_receipt}', [GoodsReceiptController::class, 'show'])->name('goods-receipts.show');
+        Route::get('/inventory/stocks', [InventoryStockController::class, 'index'])->name('inventory-stocks.index');
         Route::resource('/crm/customers', CustomerController::class);
         Route::resource('/crm/suppliers', SupplierController::class);
         Route::resource('/settings/brands', BrandController::class);
