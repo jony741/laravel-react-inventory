@@ -42,8 +42,8 @@ class InventoryStockController extends Controller
                 'store_id',
                 'variant_id',
                 DB::raw('SUM(qty_in) - SUM(qty_out) as stock_qty'),
-                DB::raw('AVG(total_cost_price) as avg_cost'),
-                DB::raw('SUM((qty_in - qty_out) * total_cost_price) as stock_value'),
+                DB::raw('AVG((unit_purchase_cost_price + unit_shipping_cost +unit_custom_duty + unit_other_cost)) as avg_cost'),
+                DB::raw('SUM((qty_in - qty_out) * (unit_purchase_cost_price + unit_shipping_cost +unit_custom_duty + unit_other_cost)) as stock_value'),
                 DB::raw('MAX(date) as last_transaction_date'),
             ])
             ->with(['variant.product.category', 'store'])
